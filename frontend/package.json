@@ -1,0 +1,38 @@
+{
+  "name": "@placement-platform/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Next.js 14 frontend for the Placement Platform",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "clean": "rm -rf .next out"
+  },
+  "dependencies": {
+    "next": "^14.2.25",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.400.0",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.25",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ─── Background & Foreground ─── */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    /* ─── Card ─── */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* ─── Popover ─── */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ─── Primary ─── */
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ─── Secondary ─── */
+    --secondary: 215 20% 95%;
+    --secondary-foreground: 220 20% 10%;
+
+    /* ─── Muted ─── */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* ─── Accent ─── */
+    --accent: 262 80% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* ─── Destructive ─── */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ─── Semantic ─── */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* ─── Border / Input / Ring ─── */
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 220 90% 56%;
+
+    /* ─── Border Radius ─── */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 20% 96%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 20% 16%;
+    --secondary-foreground: 210 20% 96%;
+
+    --muted: 215 20% 16%;
+    --muted-foreground: 215 16% 56%;
+
+    --accent: 262 80% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 215 20% 18%;
+    --input: 215 20% 18%;
+    --ring: 220 90% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/* ─── Smooth scrolling ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Focus visible styles ─── */
+@layer base {
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
