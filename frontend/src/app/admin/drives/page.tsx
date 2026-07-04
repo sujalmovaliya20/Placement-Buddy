@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, TextLink } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
 
 interface Drive {
   _id: string;
@@ -63,6 +63,7 @@ export default function AdminDrivesPage() {
   const [expandedDrive, setExpandedDrive] = useState<string | null>(null);
   const [applications, setApplications] = useState<Record<string, Application[]>>({});
   const [loadingApps, setLoadingApps] = useState<Record<string, boolean>>({});
+  const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
   
   // Google Form parsing & mapping state
   const [formFields, setFormFields] = useState<Record<string, FormField[]>>({});
@@ -85,10 +86,12 @@ export default function AdminDrivesPage() {
 
         const drivesRes = await api.getList<Drive>('/admin/drives');
         if (drivesRes.success) {
-          setDrives(drivesRes.data || []);
+          const drivesList = drivesRes.data || [];
+          setDrives(drivesList);
+
           // Initialize mappings
           const initialMappings: Record<string, Record<string, string>> = {};
-          (drivesRes.data || []).forEach((d) => {
+          drivesList.forEach((d) => {
             if (d.source_type === 'google_form') {
               initialMappings[d._id] = d.field_mapping || {
                 name: '',
@@ -101,6 +104,23 @@ export default function AdminDrivesPage() {
             }
           });
           setMappings(initialMappings);
+
+          // Fetch applicant counts in parallel
+          const counts: Record<string, number> = {};
+          await Promise.all(
+            drivesList.map(async (drive) => {
+              try {
+                const res = await api.get<Application[]>(`/admin/drives/${drive._id}/applications`);
+                if (res.success) {
+                  counts[drive._id] = (res.data || []).length;
+                }
+              } catch (e) {
+                console.error(`Failed to fetch applications for ${drive._id}:`, e);
+                counts[drive._id] = 0;
+              }
+            })
+          );
+          setApplicantCounts(counts);
         }
       } catch (err: any) {
         toastError(err.message || 'Failed to verify admin status or load drives.');
@@ -119,7 +139,9 @@ export default function AdminDrivesPage() {
     try {
       const res = await api.get<Application[]>(`/admin/drives/${driveId}/applications`);
       if (res.success) {
-        setApplications((prev) => ({ ...prev, [driveId]: res.data || [] }));
+        const appList = res.data || [];
+        setApplications((prev) => ({ ...prev, [driveId]: appList }));
+        setApplicantCounts((prev) => ({ ...prev, [driveId]: appList.length }));
       }
     } catch (err: any) {
       toastError(err.message || 'Failed to load applicants.');
@@ -227,7 +249,7 @@ export default function AdminDrivesPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold">
+        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold select-none">
           LOADING TPO ADMINISTRATIVE DATABASE... PLEASE WAIT
         </div>
       </div>
@@ -237,6 +259,22 @@ export default function AdminDrivesPage() {
   if (!isAdmin) return null;
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+
+  // Helper to map status to RibbonCard variant
+  const getCardVariant = (status: Drive['status']) => {
+    switch (status) {
+      case 'open':
+        return 'sage';
+      case 'draft':
+        return 'steel';
+      case 'in_progress':
+        return 'periwinkle';
+      case 'completed':
+      case 'cancelled':
+      default:
+        return 'salmon';
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
@@ -283,12 +321,14 @@ export default function AdminDrivesPage() {
               const fieldsList = formFields[drive._id] || [];
               const isFieldsLoading = loadingFields[drive._id];
               const isNotifySending = sendingNotify[drive._id];
+              const applicantsCount = applicantCounts[drive._id] ?? 0;
+              const cardVariant = getCardVariant(drive.status);
 
               return (
                 <RibbonCard
                   key={drive._id}
                   title={`${drive.company_name.toUpperCase()} // ${drive.role.toUpperCase()} -- STATUS: ${drive.status.toUpperCase()}`}
-                  variant="steel"
+                  variant={cardVariant}
                 >
                   <div className="space-y-[16px]">
                     {/* Meta Fields Grid */}
@@ -298,19 +338,26 @@ export default function AdminDrivesPage() {
                         {drive.source_type === 'google_form' ? 'Google Form Redirect' : 'Native Platform Form'}
                       </div>
                       <div>
-                        <span className="font-bold block">DEADLINE DATE:</span>
+                        <span className="font-bold block">DEADLINE:</span>
                         {new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}
                       </div>
                       <div>
-                        <span className="font-bold block">CUSTOM FORM FIELDS:</span>
-                        {drive.custom_fields.length} field(s) configured
+                        <span className="font-bold block">APPLICANTS:</span>
+                        {applicantsCount} student(s) registered
                       </div>
-                      <div className="flex items-end">
+                      <div className="flex gap-[8px] items-end justify-end">
+                        {drive.status === 'draft' && (
+                          <Link href={`/admin/drives/new?driveId=${drive._id}`}>
+                            <ButtonPrimary className="text-center w-full">
+                              EDIT/COMPLETE SETUP
+                            </ButtonPrimary>
+                          </Link>
+                        )}
                         <ButtonSecondary 
                           onClick={() => handleToggleExpand(drive._id)}
-                          className="w-full text-center"
+                          className="text-center"
                         >
-                          {isExpanded ? '▲ CLOSE CONTROLS' : '▼ EXPAND CONSOLE'}
+                          {isExpanded ? '▲ CLOSE' : '▼ EXPAND CONSOLE'}
                         </ButtonSecondary>
                       </div>
                     </div>
@@ -370,7 +417,7 @@ export default function AdminDrivesPage() {
                                       <select
                                         value={currentMapping}
                                         onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-[60%]"
+                                        className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[4px] rounded-none focus:outline-none w-[60%]"
                                       >
                                         <option value="">Select parsed field...</option>
                                         {fieldsList.map((f) => (

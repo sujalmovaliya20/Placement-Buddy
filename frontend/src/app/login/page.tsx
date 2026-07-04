@@ -50,7 +50,11 @@ export default function LoginPage() {
       const response = await api.post<{ role: string; name: string }>('/auth/login', payload);
       
       if (response.success) {
-        router.push(redirectTo);
+        const user = response.data;
+        const targetRedirect = (user?.role === 'tpo' || user?.role === 'superadmin')
+          ? '/admin/drives'
+          : redirectTo;
+        router.push(targetRedirect);
         router.refresh();
       } else {
         setGeneralError('An unexpected error occurred. Please try again.');

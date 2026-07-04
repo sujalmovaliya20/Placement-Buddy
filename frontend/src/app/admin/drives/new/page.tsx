@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
@@ -10,33 +10,54 @@ import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from
 interface CustomField {
   key: string;
   label: string;
-  type: 'text' | 'select' | 'checkbox' | 'date' | 'time';
+  type: 'text' | 'number' | 'textarea' | 'dropdown' | 'file';
   required: boolean;
+}
+
+interface FormField {
+  entryId: string;
+  label: string;
+  type: string;
 }
 
 export default function AdminNewDrivePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const driveIdParam = searchParams.get('driveId');
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form states
+  // Wizard state
+  const [step, setStep] = useState<1 | 2>(1);
+  const [createdDriveId, setCreatedDriveId] = useState<string | null>(null);
+
+  // Form states (Step 1)
   const [companyName, setCompanyName] = useState('');
   const [role, setRole] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [deadlineTime, setDeadlineTime] = useState('');
   const [sourceType, setSourceType] = useState<'native' | 'google_form'>('native');
-  const [googleFormUrl, setGoogleFormUrl] = useState('');
 
-  // Custom fields configuration
+  // Custom fields configuration (Step 1 - Native)
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [newFieldKey, setNewFieldKey] = useState('');
   const [newFieldLabel, setNewFieldLabel] = useState('');
-  const [newFieldType, setNewFieldType] = useState<'text' | 'select' | 'checkbox' | 'date' | 'time'>('text');
+  const [newFieldType, setNewFieldType] = useState<CustomField['type']>('text');
   const [newFieldRequired, setNewFieldRequired] = useState(false);
 
+  // Step 2 Form States (Google Form)
+  const [googleFormUrl, setGoogleFormUrl] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedFields, setParsedFields] = useState<FormField[]>([]);
+  const [fieldMappings, setFieldMappings] = useState<Record<string, string>>({});
+  const [isSavingMapping, setIsSavingMapping] = useState(false);
+  const [mappingSaved, setMappingSaved] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  // Verify Admin Access
   useEffect(() => {
     async function verifyAdmin() {
       try {
@@ -57,15 +78,77 @@ export default function AdminNewDrivePage() {
     verifyAdmin();
   }, [router, toastError]);
 
+  // Load Existing Draft if Edit/Complete Setup is triggered
+  useEffect(() => {
+    if (!isAdmin || !driveIdParam) return;
+
+    async function loadDraft() {
+      setIsLoading(true);
+      try {
+        const res = await api.get<any>(`/drives/${driveIdParam}`);
+        if (res.success && res.data) {
+          const drive = res.data;
+          setCompanyName(drive.company_name);
+          setRole(drive.role);
+          setSourceType(drive.source_type);
+          setCreatedDriveId(drive._id);
+
+          const deadline = new Date(drive.deadline);
+          const yyyy = deadline.getFullYear();
+          const mm = String(deadline.getMonth() + 1).padStart(2, '0');
+          const dd = String(deadline.getDate()).padStart(2, '0');
+          const hh = String(deadline.getHours()).padStart(2, '0');
+          const min = String(deadline.getMinutes()).padStart(2, '0');
+
+          setDeadlineDate(`${yyyy}-${mm}-${dd}`);
+          setDeadlineTime(`${hh}:${min}`);
+
+          if (drive.source_type === 'google_form') {
+            setGoogleFormUrl(drive.google_form_url || '');
+            setStep(2);
+            // Pre-populate any existing mapping in reverse (backend has studentField -> entryId, we map entryId -> studentField in dropdowns)
+            if (drive.field_mapping) {
+              const initialMappingState: Record<string, string> = {};
+              Object.entries(drive.field_mapping).forEach(([studentField, entryId]) => {
+                if (entryId) {
+                  initialMappingState[entryId as string] = studentField;
+                }
+              });
+              setFieldMappings(initialMappingState);
+              setMappingSaved(true);
+            }
+          } else {
+            setCustomFields(drive.custom_fields || []);
+            setStep(1);
+          }
+        }
+      } catch (err: any) {
+        toastError(err.message || 'Failed to load placement drive draft.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDraft();
+  }, [isAdmin, driveIdParam, toastError]);
+
+  // Automatically trigger parse on Step 2 mount if URL is already set (draft loading)
+  useEffect(() => {
+    if (step === 2 && createdDriveId && googleFormUrl && googleFormUrl !== 'https://docs.google.com/forms/placeholder') {
+      handleParseGoogleForm(googleFormUrl);
+    }
+  }, [step, createdDriveId]);
+
+  // Add Custom Field to Native Array
   const handleAddCustomField = () => {
     if (!newFieldKey.trim() || !newFieldLabel.trim()) {
-      toastError('Custom field key and label are required.');
+      toastError('Custom field ID/key and display label are required.');
       return;
     }
 
     const keySafe = newFieldKey.trim().replace(/\s+/g, '');
     if (customFields.some((f) => f.key === keySafe)) {
-      toastError('A custom field with this key already exists.');
+      toastError('A custom field with this ID/key already exists.');
       return;
     }
 
@@ -79,7 +162,6 @@ export default function AdminNewDrivePage() {
       },
     ]);
 
-    // Reset input fields
     setNewFieldKey('');
     setNewFieldLabel('');
     setNewFieldType('text');
@@ -90,17 +172,13 @@ export default function AdminNewDrivePage() {
     setCustomFields((prev) => prev.filter((f) => f.key !== keyToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: Form Submission (Native saves & exits, Google Form saves & goes to Step 2)
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
     if (!companyName.trim() || !role.trim() || !deadlineDate || !deadlineTime) {
-      toastError('Please fill in all standard required fields.');
-      return;
-    }
-
-    if (sourceType === 'google_form' && !googleFormUrl.trim()) {
-      toastError('Google Form URL is required when registration type is Google Form.');
+      toastError('Please fill in all core drive details.');
       return;
     }
 
@@ -109,37 +187,151 @@ export default function AdminNewDrivePage() {
     try {
       const deadline = new Date(`${deadlineDate}T${deadlineTime}`);
       if (deadline <= new Date()) {
-        toastError('The application deadline date must be in the future.');
+        toastError('The application deadline must be in the future.');
         setIsSubmitting(false);
         return;
       }
 
-      const payload = {
-        company_name: companyName.trim(),
-        role: role.trim(),
-        deadline,
-        source_type: sourceType,
-        google_form_url: sourceType === 'google_form' ? googleFormUrl.trim() : null,
-        custom_fields: sourceType === 'native' ? customFields : [],
-        status: 'draft',
-      };
+      // If we are editing an existing draft, update it. Otherwise, create it.
+      let res: any;
+      if (createdDriveId) {
+        const payload = {
+          company_name: companyName.trim(),
+          role: role.trim(),
+          deadline,
+          source_type: sourceType,
+          google_form_url: sourceType === 'google_form' ? (googleFormUrl || 'https://docs.google.com/forms/placeholder') : null,
+          custom_fields: sourceType === 'native' ? customFields : [],
+        };
+        res = await api.patch<any>(`/drives/${createdDriveId}`, payload);
+      } else {
+        const payload = {
+          company_name: companyName.trim(),
+          role: role.trim(),
+          deadline,
+          source_type: sourceType,
+          google_form_url: sourceType === 'google_form' ? 'https://docs.google.com/forms/placeholder' : null,
+          custom_fields: sourceType === 'native' ? customFields : [],
+          status: 'draft',
+        };
+        res = await api.post<any>('/admin/drives', payload);
+      }
 
-      const res = await api.post<any>('/admin/drives', payload);
+      if (res.success && res.data) {
+        const drive = res.data;
+        if (sourceType === 'native') {
+          toastSuccess('Placement recruitment drive registered successfully as draft.');
+          router.push('/admin/drives');
+        } else {
+          setCreatedDriveId(drive._id);
+          // If we had a dummy placeholder url, reset it so user can input the real one
+          if (drive.google_form_url === 'https://docs.google.com/forms/placeholder') {
+            setGoogleFormUrl('');
+          } else {
+            setGoogleFormUrl(drive.google_form_url || '');
+          }
+          setStep(2);
+          toastSuccess('Drive draft created. Proceeding to Google Form parsing.');
+        }
+      }
+    } catch (err: any) {
+      toastError(err.message || 'Failed to save drive details.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Step 2: Google Form Parser Trigger
+  const handleParseGoogleForm = async (urlToParse: string) => {
+    if (!createdDriveId) return;
+    const urlStr = urlToParse.trim();
+    if (!urlStr) {
+      toastError('Please enter a valid Google Form URL first.');
+      return;
+    }
+
+    setIsParsing(true);
+    setMappingSaved(false);
+
+    try {
+      // 1. Update the database URL first using PATCH /drives/:id
+      await api.patch<any>(`/drives/${createdDriveId}`, {
+        google_form_url: urlStr,
+      });
+
+      // 2. Parse form
+      const res = await api.post<FormField[]>(`/admin/drives/${createdDriveId}/parse-google-form`, {});
+      if (res.success && res.data) {
+        setParsedFields(res.data);
+        toastSuccess('Successfully parsed input fields from Google Form.');
+      }
+    } catch (err: any) {
+      toastError(err.message || 'Failed to parse Google Form. Ensure form is public.');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleDropdownMappingChange = (entryId: string, studentField: string) => {
+    setFieldMappings((prev) => ({
+      ...prev,
+      [entryId]: studentField,
+    }));
+  };
+
+  // Step 2: Save field mapping
+  const handleSaveMapping = async () => {
+    if (!createdDriveId) return;
+    setIsSavingMapping(true);
+
+    try {
+      // Build the standard { studentField: entryId } structure for the backend database
+      const payloadMapping: Record<string, string> = {};
+      Object.entries(fieldMappings).forEach(([entryId, studentField]) => {
+        if (studentField && studentField !== 'custom') {
+          payloadMapping[studentField] = entryId;
+        }
+      });
+
+      const res = await api.put<any>(`/admin/drives/${createdDriveId}/mapping`, {
+        field_mapping: payloadMapping,
+      });
+
       if (res.success) {
-        toastSuccess('Placement recruitment drive registered successfully in database.');
+        setMappingSaved(true);
+        toastSuccess('Google Form mapping configuration saved successfully.');
+      }
+    } catch (err: any) {
+      toastError(err.message || 'Failed to save field mapping.');
+    } finally {
+      setIsSavingMapping(false);
+    }
+  };
+
+  // Step 2: Publish Drive
+  const handlePublishDrive = async () => {
+    if (!createdDriveId) return;
+    setIsPublishing(true);
+
+    try {
+      const res = await api.patch<any>(`/drives/${createdDriveId}`, {
+        status: 'open',
+      });
+      if (res.success) {
+        toastSuccess('Placement drive published and is now open for students!');
         router.push('/admin/drives');
       }
     } catch (err: any) {
-      toastError(err.message || 'Failed to register new placement drive.');
+      toastError(err.message || 'Failed to publish drive.');
     } finally {
-      setIsSubmitting(false);
+      setIsPublishing(false);
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold">
+        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold select-none">
           LOADING TPO REGISTRATION PORTAL... PLEASE WAIT
         </div>
       </div>
@@ -156,123 +348,122 @@ export default function AdminNewDrivePage() {
 
       <main className="flex-1 p-[24px] max-w-3xl mx-auto w-full space-y-[24px]">
         {/* Navigation */}
-        <div className="border-b border-[#000000] pb-[12px]">
+        <div className="border-b border-[#000000] pb-[12px] flex items-center justify-between">
           <Link href="/admin/drives">
             <ButtonSecondary>
               ← BACK TO DRIVES LIST
             </ButtonSecondary>
           </Link>
+          <div className="font-helvetica text-ui-label uppercase font-bold text-gray-500">
+            WIZARD STEP: {step} OF 2
+          </div>
         </div>
 
-        {/* Create Drive Card */}
-        <RibbonCard title="REGISTER PLACEMENT DRIVE SPECIFICATION" variant="salmon">
-          <form onSubmit={handleSubmit} className="space-y-[20px]">
-            
-            {/* Standard Details Section */}
-            <div className="space-y-[16px]">
-              <h3 className="font-helvetica text-heading-3 uppercase border-b border-[#000000] pb-[4px]">
-                1. Core Details
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-                <TextInput
-                  label="Company Name"
-                  placeholder="e.g. Google Inc."
-                  required
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  disabled={isSubmitting}
-                />
-
-                <TextInput
-                  label="Job Role / Title"
-                  placeholder="e.g. Software Engineer Intern"
-                  required
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-                <div className="flex flex-col gap-[4px] w-full">
-                  <label className="font-helvetica text-ui-label text-[#000000] font-bold select-none">
-                    Deadline Date
-                  </label>
-                  <input
-                    type="date"
+        {step === 1 ? (
+          <RibbonCard title="STEP 1: RECRUITMENT DRIVE BASICS" variant="salmon">
+            <form onSubmit={handleStep1Submit} className="space-y-[20px]">
+              <div className="space-y-[16px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <TextInput
+                    label="Company Name"
+                    placeholder="e.g. Dell Computer"
                     required
-                    value={deadlineDate}
-                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                     disabled={isSubmitting}
-                    className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
+                  />
+
+                  <TextInput
+                    label="Job Role / Title"
+                    placeholder="e.g. Systems Engineer"
+                    required
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    disabled={isSubmitting}
                   />
                 </div>
 
-                <div className="flex flex-col gap-[4px] w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <div className="flex flex-col gap-[4px] w-full">
+                    <label className="font-helvetica text-ui-label text-[#000000] font-bold select-none">
+                      Deadline Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={deadlineDate}
+                      onChange={(e) => setDeadlineDate(e.target.value)}
+                      disabled={isSubmitting}
+                      className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-[4px] w-full">
+                    <label className="font-helvetica text-ui-label text-[#000000] font-bold select-none">
+                      Deadline Time
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={deadlineTime}
+                      onChange={(e) => setDeadlineTime(e.target.value)}
+                      disabled={isSubmitting}
+                      className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Source Type Toggle */}
+                <div className="flex flex-col gap-[8px] w-full">
                   <label className="font-helvetica text-ui-label text-[#000000] font-bold select-none">
-                    Deadline Time
+                    Registration Pathway Source Type
                   </label>
-                  <input
-                    type="time"
-                    required
-                    value={deadlineTime}
-                    onChange={(e) => setDeadlineTime(e.target.value)}
-                    disabled={isSubmitting}
-                    className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
-                  />
+                  <div className="flex gap-[12px]">
+                    <button
+                      type="button"
+                      onClick={() => setSourceType('native')}
+                      className={`flex-1 ${
+                        sourceType === 'native'
+                          ? 'bg-[#000000] text-[#ffffff] border border-[#000000]'
+                          : 'bg-[#ffffff] text-[#000000] border border-[#000000]'
+                      } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
+                      disabled={isSubmitting}
+                    >
+                      NATIVE REGISTRATION FORM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSourceType('google_form')}
+                      className={`flex-1 ${
+                        sourceType === 'google_form'
+                          ? 'bg-[#000000] text-[#ffffff] border border-[#000000]'
+                          : 'bg-[#ffffff] text-[#000000] border border-[#000000]'
+                      } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
+                      disabled={isSubmitting}
+                    >
+                      GOOGLE FORMS REDIRECT
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Registration Pathway Section */}
-            <div className="space-y-[16px]">
-              <h3 className="font-helvetica text-heading-3 uppercase border-b border-[#000000] pb-[4px]">
-                2. Application Pathway Configuration
-              </h3>
-
-              <div className="flex flex-col gap-[4px] w-full">
-                <label className="font-helvetica text-ui-label text-[#000000] font-bold select-none">
-                  Application Method
-                </label>
-                <select
-                  value={sourceType}
-                  onChange={(e) => setSourceType(e.target.value as 'native' | 'google_form')}
-                  disabled={isSubmitting}
-                  className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
-                >
-                  <option value="native">Native Platform Registration (Form fields handled on-site)</option>
-                  <option value="google_form">Google Forms Redirect (Pre-filled query redirect)</option>
-                </select>
-              </div>
-
-              {sourceType === 'google_form' ? (
-                <TextInput
-                  label="Google Form URL"
-                  placeholder="https://docs.google.com/forms/d/e/.../viewform"
-                  required
-                  value={googleFormUrl}
-                  onChange={(e) => setGoogleFormUrl(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              ) : (
-                /* Native Custom Fields Builder */
-                <div className="border border-[#000000] p-[16px] bg-[#ffffff] space-y-[16px]">
+              {/* Native Mode Custom Field Builder */}
+              {sourceType === 'native' && (
+                <div className="border border-[#000000] p-[16px] bg-[#ffffff] space-y-[16px] mt-[16px]">
                   <h4 className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
                     Configure Native Custom Fields
                   </h4>
 
-                  {/* Add New Field Toolbar */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] pt-[4px]">
                     <TextInput
-                      label="Field ID / Key (no spaces)"
-                      placeholder="e.g. coverLetter"
+                      label="Field ID / Key (no spaces, e.g. linkedinUrl)"
+                      placeholder="e.g. githubLink"
                       value={newFieldKey}
                       onChange={(e) => setNewFieldKey(e.target.value)}
                     />
                     <TextInput
                       label="Field Label / Display Text"
-                      placeholder="e.g. Why do you want to join?"
+                      placeholder="e.g. GitHub Repository Link"
                       value={newFieldLabel}
                       onChange={(e) => setNewFieldLabel(e.target.value)}
                     />
@@ -288,11 +479,11 @@ export default function AdminNewDrivePage() {
                         onChange={(e) => setNewFieldType(e.target.value as any)}
                         className="bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full"
                       >
-                        <option value="text">Text / Textarea</option>
-                        <option value="select">Dropdown Select (Yes/No)</option>
-                        <option value="checkbox">Agreement Checkbox</option>
-                        <option value="date">Date Input</option>
-                        <option value="time">Time Input</option>
+                        <option value="text">Single-line Text</option>
+                        <option value="number">Number</option>
+                        <option value="textarea">Multi-line Text (Textarea)</option>
+                        <option value="dropdown">Dropdown Select (Yes/No)</option>
+                        <option value="file">File Attachment</option>
                       </select>
                     </div>
 
@@ -304,33 +495,33 @@ export default function AdminNewDrivePage() {
                         onChange={(e) => setNewFieldRequired(e.target.checked)}
                         className="h-[16px] w-[16px] rounded-none border-[#000000] bg-[#ffffff] accent-[#000000]"
                       />
-                      <label htmlFor="new-field-required" className="font-times-new-roman text-body select-none">
-                        Required field
+                      <label htmlFor="new-field-required" className="font-times-new-roman text-body select-none font-bold">
+                        Mark field as required
                       </label>
                     </div>
                   </div>
 
                   <div className="flex justify-end pt-[4px]">
                     <ButtonSecondary type="button" onClick={handleAddCustomField}>
-                      + ADD FIELD CONFIGURATION
+                      + ADD FIELD TO REGISTRATION
                     </ButtonSecondary>
                   </div>
 
-                  {/* List of Fields */}
+                  {/* Configured Fields */}
                   <div className="space-y-[8px] pt-[8px]">
                     <span className="font-helvetica text-ui-label uppercase font-bold block text-[#000000]">
-                      Configured Fields List:
+                      Active Custom Fields:
                     </span>
                     {customFields.length === 0 ? (
                       <p className="font-times-new-roman text-body-sm italic">
-                        No custom fields configured. Students will apply with their profile details only.
+                        No custom fields configured. Students will apply using standard profile details only.
                       </p>
                     ) : (
                       <div className="space-y-[6px]">
                         {customFields.map((f) => (
                           <div key={f.key} className="flex justify-between items-center border border-[#000000] p-[8px] bg-tint-sky text-body-sm font-times-new-roman">
                             <div>
-                              <span className="font-bold">{f.label}</span> (ID: <code>{f.key}</code>) | Type: {f.type} | {f.required ? 'Required' : 'Optional'}
+                              <span className="font-bold">{f.label}</span> (Key: <code>{f.key}</code>) | Type: {f.type} | {f.required ? 'Required' : 'Optional'}
                             </div>
                             <button
                               type="button"
@@ -346,17 +537,139 @@ export default function AdminNewDrivePage() {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Submission Actions */}
-            <div className="pt-[16px] border-t border-[#000000] flex justify-end">
-              <ButtonPrimary type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'REGISTERING DRIVE...' : 'REGISTER RECRUITMENT DRIVE'}
-              </ButtonPrimary>
-            </div>
+              {/* Action Bar */}
+              <div className="pt-[16px] border-t border-[#000000] flex justify-end">
+                <ButtonPrimary type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? 'SAVING BASICS...'
+                    : sourceType === 'google_form'
+                    ? 'NEXT: CONFIGURE GOOGLE FORM MAPPING →'
+                    : 'SAVE RECRUITMENT DRIVE'}
+                </ButtonPrimary>
+              </div>
+            </form>
+          </RibbonCard>
+        ) : (
+          <RibbonCard title="STEP 2: GOOGLE FORM PARSING & MAPPING" variant="steel">
+            <div className="space-y-[20px]">
+              {/* Google Form URL Setup */}
+              <div className="space-y-[8px]">
+                <div className="flex flex-col md:flex-row gap-[12px] items-end">
+                  <div className="flex-1">
+                    <TextInput
+                      label="Google Form URL (Must be public)"
+                      placeholder="https://docs.google.com/forms/d/e/.../viewform"
+                      value={googleFormUrl}
+                      onChange={(e) => setGoogleFormUrl(e.target.value)}
+                      disabled={isParsing}
+                    />
+                  </div>
+                  <ButtonPrimary
+                    onClick={() => handleParseGoogleForm(googleFormUrl)}
+                    disabled={isParsing}
+                    className="h-[34px]"
+                  >
+                    PARSE FORM
+                  </ButtonPrimary>
+                </div>
+              </div>
 
-          </form>
-        </RibbonCard>
+              {/* Loading State */}
+              {isParsing && (
+                <div className="p-[16px] border border-black bg-white font-times-new-roman text-body">
+                  Parsing form...
+                </div>
+              )}
+
+              {/* Parsed Fields Mapping Table */}
+              {!isParsing && parsedFields.length > 0 && (
+                <div className="space-y-[12px]">
+                  <div className="font-helvetica text-heading-3 uppercase font-bold">
+                    Field Mapping Rules
+                  </div>
+                  <p className="font-times-new-roman text-body-sm">
+                    Map each detected Google Form field (left) to a student profile attribute (right). 
+                    Select "Custom" if the student must fill it manually.
+                  </p>
+
+                  <div className="border border-[#000000] overflow-x-auto rounded-none">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#ffffff]">
+                          <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold text-[#000000] border-r border-[#000000] last:border-r-0 select-none">
+                            Google Form Field Label
+                          </th>
+                          <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold text-[#000000] border-r border-[#000000] last:border-r-0 select-none">
+                            Mapped Profile Attribute
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedFields.map((field) => {
+                          const currentVal = fieldMappings[field.entryId] || '';
+                          return (
+                            <tr key={field.entryId} className="border-b border-[#000000] last:border-b-0">
+                              <td className="border-r border-[#000000] px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                <span className="font-bold">{field.label}</span>
+                                <div className="text-[10px] text-gray-500 font-mono mt-[2px]">
+                                  ID: {field.entryId} ({field.type})
+                                </div>
+                              </td>
+                              <td className="px-[12px] py-[8px]">
+                                <select
+                                  value={currentVal}
+                                  onChange={(e) => handleDropdownMappingChange(field.entryId, e.target.value)}
+                                  className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[4px] rounded-none focus:outline-none w-full"
+                                >
+                                  <option value="">Custom — student fills manually</option>
+                                  <option value="name">Full Name (name)</option>
+                                  <option value="roll_no">Roll Number (roll_no)</option>
+                                  <option value="branch">Branch (branch)</option>
+                                  <option value="cgpa">CGPA (cgpa)</option>
+                                  <option value="phone">Phone Number (phone)</option>
+                                  <option value="email">College Email (email)</option>
+                                  <option value="resume_url">Resume Link (resume_url)</option>
+                                  <option value="skills">Skills list (skills)</option>
+                                </select>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-end gap-[12px] pt-[12px] border-t border-[#000000]">
+                    <ButtonSecondary onClick={() => setStep(1)}>
+                      ← MODIFY BASICS
+                    </ButtonSecondary>
+                    <ButtonPrimary onClick={handleSaveMapping} disabled={isSavingMapping}>
+                      {isSavingMapping ? 'SAVING MAPPING...' : 'SAVE MAPPING'}
+                    </ButtonPrimary>
+                  </div>
+                </div>
+              )}
+
+              {/* Publish Drive Step */}
+              {mappingSaved && !isParsing && (
+                <div className="border border-black p-[16px] bg-tint-sage space-y-[12px] mt-[16px]">
+                  <h4 className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
+                    PUBLISH RECRUITMENT REGISTER
+                  </h4>
+                  <p className="font-times-new-roman text-body-sm">
+                    The mapping has been saved to the database. Publishing will set the drive's status to <strong>OPEN</strong>, making it active for registration.
+                  </p>
+                  <div className="flex justify-end">
+                    <ButtonPrimary onClick={handlePublishDrive} disabled={isPublishing}>
+                      {isPublishing ? 'PUBLISHING...' : '★ PUBLISH RECRUITMENT DRIVE'}
+                    </ButtonPrimary>
+                  </div>
+                </div>
+              )}
+            </div>
+          </RibbonCard>
+        )}
       </main>
 
       <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">

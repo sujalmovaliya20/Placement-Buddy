@@ -38,18 +38,25 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        // 1. Fetch Profile
-        const profileRes = await api.get<any>('/students/me');
-        if (!profileRes.success || !profileRes.data) {
+        // 1. Fetch Profile and Role
+        const authRes = await api.get<any>('/auth/me');
+        if (!authRes.success || !authRes.data) {
           router.push('/login?redirectTo=/dashboard');
           return;
         }
-        setStudent(profileRes.data);
+
+        const { role, profile } = authRes.data;
+        if (role === 'tpo' || role === 'superadmin') {
+          router.push('/admin/drives');
+          return;
+        }
+
+        setStudent(profile);
 
         // 2. Fetch Drives & Applications in parallel
         const [drivesRes, appsRes] = await Promise.all([
           api.getList<Drive>('/drives'),
-          api.getList<Application>(`/applications`, { studentId: profileRes.data.id || profileRes.data._id })
+          api.getList<Application>(`/applications`, { studentId: profile.id || profile._id })
         ]);
 
         if (drivesRes.success) {
