@@ -47,3 +47,6 @@ coverage/
 
 # Graphify
 graphify-out/
+
+# WhatsApp Session
+backend/whatsapp-session/

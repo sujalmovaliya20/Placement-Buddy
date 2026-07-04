@@ -7,6 +7,7 @@ import { StatusCodes } from 'http-status-codes';
 import { applicationService } from '../services/application.service';
 import type { ListQueryParams } from '../../../shared/src/types/api';
 import type { CreateApplicationPayload, UpdateApplicationStatusPayload } from '../models';
+import { AppError } from '../middleware/error-handler';
 
 export const applicationController = {
   async list(req: Request, res: Response): Promise<void> {
@@ -19,6 +20,10 @@ export const applicationController = {
       studentId: req.query['studentId'] as string | undefined,
       driveId: req.query['driveId'] as string | undefined,
     };
+
+    if (req.user && req.user.role === 'student') {
+      query.studentId = req.user.id;
+    }
 
     const result = await applicationService.list(query);
     res.status(StatusCodes.OK).json(result);
@@ -35,13 +40,33 @@ export const applicationController = {
 
   async create(req: Request, res: Response): Promise<void> {
     const payload = req.body as CreateApplicationPayload;
-    const application = await applicationService.create(payload);
 
-    res.status(StatusCodes.CREATED).json({
-      success: true,
-      data: application,
-      message: 'Application submitted successfully',
-    });
+    if (!req.user) {
+      throw new AppError('Unauthorized. Please log in.', StatusCodes.UNAUTHORIZED, 'UNAUTHORIZED');
+    }
+
+    if (req.user.role !== 'tpo' && req.user.role !== 'superadmin' && req.user.id !== payload.student_id) {
+      throw new AppError('Forbidden. You can only apply on your own behalf.', StatusCodes.FORBIDDEN, 'FORBIDDEN');
+    }
+
+    try {
+      const application = await applicationService.create(payload);
+
+      res.status(StatusCodes.CREATED).json({
+        success: true,
+        data: application,
+        message: 'Application submitted successfully',
+      });
+    } catch (error: any) {
+      if (error.code === 11000 || (error.name === 'MongoServerError' && error.code === 11000)) {
+        throw new AppError(
+          'You already applied to this drive',
+          StatusCodes.CONFLICT,
+          'ALREADY_APPLIED'
+        );
+      }
+      throw error;
+    }
   },
 
   async updateStatus(req: Request, res: Response): Promise<void> {

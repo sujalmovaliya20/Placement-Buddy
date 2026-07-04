@@ -15,3 +15,19 @@ export const apiRateLimiter = rateLimit({
   },
   statusCode: StatusCodes.TOO_MANY_REQUESTS,
 });
+
+export const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 5, // Limit each IP to 5 login attempts per window
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many login attempts from this IP, please try again after 15 minutes',
+    },
+  },
+  statusCode: StatusCodes.TOO_MANY_REQUESTS,
+});
+

@@ -2,15 +2,17 @@ import { Student as StudentModel } from './student.model';
 import { Drive as DriveModel } from './drive.model';
 import { Application as ApplicationModel } from './application.model';
 import { Admin as AdminModel } from './admin.model';
+import { NotificationLog as NotificationLogModel } from './notification-log.model';
 
 // Export mongoose models
-export { StudentModel, DriveModel, ApplicationModel, AdminModel };
+export { StudentModel, DriveModel, ApplicationModel, AdminModel, NotificationLogModel };
 
 // Export interface types (Document types)
 export type { IStudent, IStudent as Student } from './student.model';
 export type { IDrive, IDrive as Drive, ICustomField as CustomField } from './drive.model';
 export type { IApplication, IApplication as Application } from './application.model';
 export type { IAdmin, IAdmin as Admin } from './admin.model';
+export type { INotificationLog, INotificationLog as NotificationLog } from './notification-log.model';
 
 // Payloads for Creation/Updates expected by controllers & services
 export type CreateStudentPayload = {
@@ -20,6 +22,7 @@ export type CreateStudentPayload = {
   cgpa: number;
   phone: string;
   email: string;
+  password?: string;
   resume_url?: string | null;
   skills?: string[];
   links?: Record<string, any>;

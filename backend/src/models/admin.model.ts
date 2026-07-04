@@ -1,8 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export interface IAdmin extends Document {
   name: string;
   email: string;
+  password?: string;
   role: 'tpo' | 'superadmin';
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +25,11 @@ const adminSchema = new Schema<IAdmin>(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
     },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      select: false,
+    },
     role: {
       type: String,
       enum: {
@@ -36,5 +43,16 @@ const adminSchema = new Schema<IAdmin>(
     timestamps: true,
   }
 );
+
+adminSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password || '', salt);
+    next();
+  } catch (err: any) {
+    next(err);
+  }
+});
 
 export const Admin = mongoose.model<IAdmin>('Admin', adminSchema);

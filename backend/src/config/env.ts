@@ -23,6 +23,13 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().url().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  CLOUDINARY_CLOUD_NAME: z.string().default(''),
+  CLOUDINARY_API_KEY: z.string().default(''),
+  CLOUDINARY_API_SECRET: z.string().default(''),
+  WHATSAPP_GROUP_ID: z.string().optional().default(''),
+  OPENWA_API_URL: z.string().default('http://localhost:2785'),
+  OPENWA_API_KEY: z.string().optional().default(''),
+  OPENWA_SESSION_ID: z.string().default('placement-buddy'),
 });
 
 type Env = z.infer<typeof envSchema>;

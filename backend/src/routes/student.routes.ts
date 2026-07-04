@@ -7,13 +7,37 @@
 import { Router } from 'express';
 import { studentController } from '../controllers/student.controller';
 import { asyncHandler } from '../utils/async-handler';
+import { authenticate } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate';
+import { updateProfileSchema } from '@shared/index';
+import { isAdmin, isOwner } from '../middleware/authorize.middleware';
+import multer from 'multer';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are allowed') as any);
+    }
+    cb(null, true);
+  },
+});
 
 const router = Router();
 
-router.get('/', asyncHandler(studentController.list));
-router.get('/:id', asyncHandler(studentController.getById));
-router.post('/', asyncHandler(studentController.create));
-router.patch('/:id', asyncHandler(studentController.update));
-router.delete('/:id', asyncHandler(studentController.delete));
+// Profile CRUD operations (must be mounted before /:id)
+router.get('/me', authenticate, asyncHandler(studentController.getMe));
+router.put('/me', authenticate, validate({ body: updateProfileSchema }), asyncHandler(studentController.updateMe));
+router.post('/me/resume', authenticate, upload.single('resume'), asyncHandler(studentController.uploadResume));
+
+// General administrative operations
+router.get('/', authenticate, isAdmin, asyncHandler(studentController.list));
+router.get('/:id', authenticate, isOwner('student'), asyncHandler(studentController.getById));
+router.post('/', authenticate, isAdmin, asyncHandler(studentController.create));
+router.patch('/:id', authenticate, isOwner('student'), asyncHandler(studentController.update));
+router.delete('/:id', authenticate, isAdmin, asyncHandler(studentController.delete));
 
 export const studentRoutes = router;

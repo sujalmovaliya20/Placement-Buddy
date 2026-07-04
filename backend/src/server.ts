@@ -8,11 +8,15 @@ import { env } from './config/env';
 import { createApp } from './app';
 import { logger } from './utils/logger';
 import { connectDatabase, closeDatabase } from './config/db';
+import { whatsappService } from './services/whatsapp.service';
 
 async function startServer(): Promise<void> {
   try {
     // Connect to MongoDB Atlas first
     await connectDatabase();
+
+    // Initialize WhatsApp service client
+    await whatsappService.initialize();
 
     const app = createApp();
     const port = env.PORT;
@@ -33,6 +37,8 @@ async function startServer(): Promise<void> {
       // Close Express server
       server.close(async () => {
         logger.info('HTTP server closed');
+        // Shutdown WhatsApp client cleanly
+        await whatsappService.shutdown();
         // Close DB connection
         await closeDatabase();
         process.exit(0);

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextLink, CtaBlockRed } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -6,45 +8,60 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
-      <div className="mx-auto max-w-2xl text-center animate-fade-in">
-        <div className="mb-6 inline-flex items-center rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground">
-          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-success" />
-          Platform Active
+    <div className="flex-1 flex flex-col">
+      <TopBanner>
+        PLACEMENT BUDDY ONLINE SYSTEM v1.0 (DELL 1996 EDITION)
+      </TopBanner>
+
+      <main className="flex-1 flex flex-col items-center justify-center p-[40px] text-center bg-[#ffffff]">
+        <div className="max-w-[600px] border border-[#000000] p-[24px] rounded-none bg-tint-sage flex flex-col items-center gap-[16px]">
+          {/* Active Burst */}
+          <div className="bg-[#fcc20f] text-[#000000] border border-[#000000] font-helvetica text-ui-label font-bold px-[8px] py-[4px] uppercase select-none">
+            ★ SYSTEM STATUS: ONLINE ★
+          </div>
+
+          <h1 className="font-arial-black text-display text-ink uppercase leading-none tracking-tight">
+            Placement <span className="text-[#e91d2a]">Buddy</span>
+          </h1>
+
+          <p className="font-times-new-roman text-body text-[#000000] leading-relaxed">
+            Welcome to the Placement Buddy portal. This secure system automates recruitment coordination, drive notifications, and student profile matching for enterprise-scale placement drives.
+          </p>
+
+          {/* WARNING: Max one CtaBlockRed per page */}
+          <CtaBlockRed className="w-full text-left flex flex-col gap-[8px]">
+            <span className="font-helvetica text-heading-3 uppercase font-bold block">
+              ★ ATTENTION STUDENTS ★
+            </span>
+            <span className="font-times-new-roman text-body block">
+              Please sign up with your valid college domain email address (@college.edu) to submit applications for the active placement cycle.
+            </span>
+          </CtaBlockRed>
+
+          <div className="flex flex-col sm:flex-row gap-[12px] w-full justify-center mt-[8px]">
+            <Link href="/dashboard" className="flex-1 sm:flex-none">
+              <ButtonPrimary className="w-full">
+                GO TO DASHBOARD
+              </ButtonPrimary>
+            </Link>
+            <Link href="/signup" className="flex-1 sm:flex-none">
+              <ButtonSecondary className="w-full">
+                CREATE AN ACCOUNT
+              </ButtonSecondary>
+            </Link>
+          </div>
+
+          <div className="border-t border-[#000000] pt-[12px] w-full text-center">
+            <span className="font-times-new-roman text-body-sm text-[#000000]">
+              Already registered? <TextLink href="/login">Log in here</TextLink>
+            </span>
+          </div>
         </div>
+      </main>
 
-        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          Placement{' '}
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Buddy
-          </span>
-        </h1>
-
-        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          Streamline your college placement process. Manage drives, track
-          applications, and connect students with top companies — all in one
-          place.
-        </p>
-
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <a
-            href="/dashboard"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Go to Dashboard
-          </a>
-          <a
-            href="/drives"
-            className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Browse Drives
-          </a>
-        </div>
-
-        <p className="mt-12 text-sm text-muted-foreground/60">
-          Built for placement coordinators and students
-        </p>
-      </div>
-    </main>
+      <footer className="border-t border-[#000000] bg-[#ffffff] p-[16px] text-center font-times-new-roman text-body-sm select-none">
+        © 1996 Placement Buddy Corporation. All rights reserved.
+      </footer>
+    </div>
   );
 }

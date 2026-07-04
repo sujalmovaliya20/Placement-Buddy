@@ -1,74 +1,54 @@
 /**
- * Student service — business logic for student operations.
- *
- * This layer handles data access and business rules.
- * Controllers call services; services never send HTTP responses.
+ * ROOT CAUSE: This service layer previously stored, listed, and updated student profiles in an
+ * in-memory Map structure. Consequently, restarting the server cleared the map, losing all active
+ * student listings and details even though they still existed in MongoDB.
+ * FIX: Refactored the service layer to perform direct Mongoose queries against the StudentModel.
  */
 
+import mongoose from 'mongoose';
 import type {
   Student,
   CreateStudentPayload,
   UpdateStudentPayload,
 } from '../models';
+import { StudentModel } from '../models';
 import type { ListQueryParams, PaginatedResponse } from '../../../shared/src/types/api';
 import { AppError } from '../middleware/error-handler';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 import { PAGINATION } from '../config/constants';
 
-/**
- * In-memory store — replace with your database adapter (Prisma, Mongoose, etc.)
- * This is a functional placeholder that demonstrates the service interface.
- */
-const students: Map<string, Student> = new Map();
-
-function generateId(): string {
-  return `stu_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
 export const studentService = {
   async list(query: ListQueryParams): Promise<PaginatedResponse<Student>> {
     const page = query.page ?? PAGINATION.DEFAULT_PAGE;
     const limit = Math.min(query.limit ?? PAGINATION.DEFAULT_LIMIT, PAGINATION.MAX_LIMIT);
+    const search = query.search;
+    const sortBy = query.sortBy ?? 'createdAt';
+    const sortOrder = query.sortOrder === 'desc' ? -1 : 1;
 
-    let items = Array.from(students.values());
+    const filter: any = {};
 
-    // Search filter
-    if (query.search) {
-      const term = query.search.toLowerCase();
-      items = items.filter(
-        (s) =>
-          s.name.toLowerCase().includes(term) ||
-          s.email.toLowerCase().includes(term) ||
-          s.roll_no.toLowerCase().includes(term),
-      );
+    if (search) {
+      const regex = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { name: regex },
+        { email: regex },
+        { roll_no: regex },
+      ];
     }
 
-    // Sort
-    if (query.sortBy) {
-      const sortKey = query.sortBy as keyof Student;
-      const order = query.sortOrder === 'desc' ? -1 : 1;
-      items.sort((a, b) => {
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-          return aVal.localeCompare(bVal) * order;
-        }
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return (aVal - bVal) * order;
-        }
-        return 0;
-      });
-    }
-
-    const total = items.length;
+    const total = await StudentModel.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
     const start = (page - 1) * limit;
-    const data = items.slice(start, start + limit);
+
+    const data = await StudentModel.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(start)
+      .limit(limit);
 
     return {
       success: true,
-      data,
+      data: data as unknown as Student[],
       pagination: {
         page,
         limit,
@@ -80,19 +60,23 @@ export const studentService = {
   },
 
   async getById(id: string): Promise<Student> {
-    const student = students.get(id);
-
-    if (!student) {
-      throw new AppError(`Student with ID "${id}" not found`, StatusCodes.NOT_FOUND);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(`Invalid Student ID format: "${id}"`, StatusCodes.BAD_REQUEST, 'INVALID_ID');
     }
 
-    return student;
+    const student = await StudentModel.findById(id);
+
+    if (!student) {
+      throw new AppError(`Student with ID "${id}" not found`, StatusCodes.NOT_FOUND, 'NOT_FOUND');
+    }
+
+    return student as unknown as Student;
   },
 
   async create(payload: CreateStudentPayload): Promise<Student> {
     // Check for duplicate email
-    const existing = Array.from(students.values()).find((s) => s.email === payload.email);
-    if (existing) {
+    const existingEmail = await StudentModel.findOne({ email: payload.email });
+    if (existingEmail) {
       throw new AppError(
         `A student with email "${payload.email}" already exists`,
         StatusCodes.CONFLICT,
@@ -100,18 +84,30 @@ export const studentService = {
       );
     }
 
-    const now = new Date();
-    const student = {
-      id: generateId(),
-      ...payload,
-      createdAt: now,
-      updatedAt: now,
-    } as unknown as Student;
+    // Check for duplicate roll number
+    const existingRoll = await StudentModel.findOne({ roll_no: payload.roll_no });
+    if (existingRoll) {
+      throw new AppError(
+        `A student with roll number "${payload.roll_no}" already exists`,
+        StatusCodes.CONFLICT,
+        'DUPLICATE_ROLL_NO',
+      );
+    }
 
-    students.set(student.id, student);
-    logger.info({ studentId: student.id }, 'Student created');
-
-    return student;
+    try {
+      const student = await StudentModel.create(payload);
+      logger.info({ studentId: student._id }, 'Student created successfully in DB');
+      return student as unknown as Student;
+    } catch (error: any) {
+      if (error.code === 11000) {
+        throw new AppError(
+          'Email or Roll Number already exists',
+          StatusCodes.CONFLICT,
+          'DUPLICATE_RECORD'
+        );
+      }
+      throw error;
+    }
   },
 
   async update(id: string, payload: UpdateStudentPayload): Promise<Student> {
@@ -119,9 +115,7 @@ export const studentService = {
 
     // Check email uniqueness if email is being changed
     if (payload.email && payload.email !== existing.email) {
-      const emailTaken = Array.from(students.values()).find(
-        (s) => s.email === payload.email && s.id !== id,
-      );
+      const emailTaken = await StudentModel.findOne({ email: payload.email, _id: { $ne: id } });
       if (emailTaken) {
         throw new AppError(
           `A student with email "${payload.email}" already exists`,
@@ -131,28 +125,43 @@ export const studentService = {
       }
     }
 
-    const updated = {
-      ...existing,
-      ...payload,
-      id: existing.id,
-      createdAt: existing.createdAt,
-      updatedAt: new Date(),
-    } as unknown as Student;
+    // Check roll number uniqueness if roll number is being changed
+    if (payload.roll_no && payload.roll_no !== existing.roll_no) {
+      const rollTaken = await StudentModel.findOne({ roll_no: payload.roll_no, _id: { $ne: id } });
+      if (rollTaken) {
+        throw new AppError(
+          `A student with roll number "${payload.roll_no}" already exists`,
+          StatusCodes.CONFLICT,
+          'DUPLICATE_ROLL_NO',
+        );
+      }
+    }
 
-    students.set(id, updated);
-    logger.info({ studentId: id }, 'Student updated');
+    const updated = await StudentModel.findByIdAndUpdate(
+      id,
+      { $set: payload },
+      { new: true, runValidators: true }
+    );
 
-    return updated;
+    if (!updated) {
+      throw new AppError(`Student with ID "${id}" not found`, StatusCodes.NOT_FOUND, 'NOT_FOUND');
+    }
+
+    logger.info({ studentId: id }, 'Student updated in DB');
+    return updated as unknown as Student;
   },
 
   async delete(id: string): Promise<void> {
-    const exists = students.has(id);
-
-    if (!exists) {
-      throw new AppError(`Student with ID "${id}" not found`, StatusCodes.NOT_FOUND);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(`Invalid Student ID format: "${id}"`, StatusCodes.BAD_REQUEST, 'INVALID_ID');
     }
 
-    students.delete(id);
-    logger.info({ studentId: id }, 'Student deleted');
+    const deleted = await StudentModel.findByIdAndDelete(id);
+
+    if (!deleted) {
+      throw new AppError(`Student with ID "${id}" not found`, StatusCodes.NOT_FOUND, 'NOT_FOUND');
+    }
+
+    logger.info({ studentId: id }, 'Student deleted from DB');
   },
 };

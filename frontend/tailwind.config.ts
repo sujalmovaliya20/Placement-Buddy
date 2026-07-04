@@ -30,57 +30,55 @@ const config: Config = {
        * Uses CSS custom properties so shadcn/ui components pick them up.
        */
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        border: '#000000',
+        input: '#000000',
+        ring: '#000000',
+        background: '#ffffff',
+        foreground: '#000000',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#e91d2a',
+          foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: '#ffffff',
+          foreground: '#000000',
         },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
-        },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        /** Custom semantic colors — extend from DESIGN.md */
-        success: {
-          DEFAULT: 'hsl(var(--success))',
-          foreground: 'hsl(var(--success-foreground))',
-        },
-        warning: {
-          DEFAULT: 'hsl(var(--warning))',
-          foreground: 'hsl(var(--warning-foreground))',
-        },
+        canvas: '#ffffff',
+        surface: '#ffffff',
+        ink: '#000000',
+        'frame-ink': '#000000',
+        'yellow-sticker': '#fcc20f',
+        'purple-stripe': '#6a26a4',
+        link: '#0000ee',
+        'tint-olive': '#8e8a25',
+        'tint-sage': '#b3bd95',
+        'tint-salmon': '#d77a7a',
+        'tint-peach': '#e6915d',
+        'tint-lime': '#c0d4a7',
+        'tint-sky': '#9ab6c8',
+        'tint-steel': '#a5b8c0',
+        'tint-periwinkle': '#8c9ae0',
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-mono)', 'monospace'],
+        'arial-black': ['Arial Black', 'sans-serif'],
+        helvetica: ['Helvetica', 'Arial', 'sans-serif'],
+        'times-new-roman': ['Times New Roman', 'Times', 'serif'],
+      },
+      fontSize: {
+        display: '36px',
+        'heading-1': '24px',
+        'heading-2': '16px',
+        'heading-3': '14px',
+        body: '14px',
+        'body-sm': '12px',
+        caption: '11px',
+        button: '12px',
+        link: '14px',
+        'ui-label': '12px',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        none: '0px',
+        full: '9999px',
       },
       keyframes: {
         'accordion-down': {

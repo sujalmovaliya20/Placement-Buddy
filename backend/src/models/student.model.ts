@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { env } from '../config/env';
+import bcrypt from 'bcryptjs';
 
 export interface IStudent extends Document {
   roll_no: string;
@@ -8,6 +9,7 @@ export interface IStudent extends Document {
   cgpa: number;
   phone: string;
   email: string;
+  password?: string;
   resume_url: string | null;
   skills: string[];
   links: {
@@ -64,6 +66,11 @@ const studentSchema = new Schema<IStudent>(
         message: (props) => `${props.value} is not a valid college email address. It must end with @${env.COLLEGE_EMAIL_DOMAIN}`,
       },
     },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      select: false,
+    },
     resume_url: {
       type: String,
       default: null,
@@ -81,5 +88,16 @@ const studentSchema = new Schema<IStudent>(
     timestamps: true,
   }
 );
+
+studentSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password || '', salt);
+    next();
+  } catch (err: any) {
+    next(err);
+  }
+});
 
 export const Student = mongoose.model<IStudent>('Student', studentSchema);

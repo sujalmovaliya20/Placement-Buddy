@@ -109,8 +109,13 @@ export async function isOpenDriveOnly(req: Request, _res: Response, next: NextFu
       return next(error);
     }
   } else {
-    // Inject filter for query lists
-    req.query['status'] = 'open';
+    // ROOT CAUSE: Previously, this middleware injected the status filter directly into req.query['status'].
+    // This was bypassable because the controller and service list methods did not extract or enforce
+    // req.query.status, letting students fetch draft/closed drives. Even if implemented, students could
+    // supply a custom query parameter (e.g. ?status=draft) that could overwrite it.
+    // FIX: Assign to a new req.forcedStatus property, which is securely copied by the controller
+    // and overrules any client-supplied parameters.
+    req.forcedStatus = 'open';
     return next();
   }
 }

@@ -51,3 +51,9 @@ export type {
   ListQueryParams,
   SortOrder,
 } from './types/api';
+
+// Validation
+export { signupSchema, loginSchema, updateProfileSchema } from './validation';
+export type { SignupInput, LoginInput, UpdateProfileInput } from './validation';
+
+

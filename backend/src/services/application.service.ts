@@ -10,17 +10,12 @@ import type {
   CreateApplicationPayload,
   UpdateApplicationStatusPayload,
 } from '../models';
+import { ApplicationModel, DriveModel, StudentModel } from '../models';
 import type { ListQueryParams, PaginatedResponse } from '../../../shared/src/types/api';
 import { AppError } from '../middleware/error-handler';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 import { PAGINATION } from '../config/constants';
-
-const applications: Map<string, Application> = new Map();
-
-function generateId(): string {
-  return `app_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
 
 /** Valid status transitions — guards against invalid state changes */
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -34,29 +29,30 @@ export const applicationService = {
     const page = query.page ?? PAGINATION.DEFAULT_PAGE;
     const limit = Math.min(query.limit ?? PAGINATION.DEFAULT_LIMIT, PAGINATION.MAX_LIMIT);
 
-    let items = Array.from(applications.values());
+    const filter: any = {};
 
     // Filter by student
     if (query.studentId) {
-      items = items.filter((a) => a.student_id.toString() === query.studentId);
+      filter.student_id = query.studentId;
     }
 
     // Filter by drive
     if (query.driveId) {
-      items = items.filter((a) => a.drive_id.toString() === query.driveId);
+      filter.drive_id = query.driveId;
     }
 
-    // Sort by applied_at descending by default
-    items.sort((a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime());
-
-    const total = items.length;
+    const total = await ApplicationModel.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
     const start = (page - 1) * limit;
-    const data = items.slice(start, start + limit);
+
+    const data = await ApplicationModel.find(filter)
+      .sort({ applied_at: -1 })
+      .skip(start)
+      .limit(limit);
 
     return {
       success: true,
-      data,
+      data: data as unknown as Application[],
       pagination: {
         page,
         limit,
@@ -68,49 +64,94 @@ export const applicationService = {
   },
 
   async getById(id: string): Promise<Application> {
-    const application = applications.get(id);
+    const application = await ApplicationModel.findById(id);
 
     if (!application) {
       throw new AppError(`Application with ID "${id}" not found`, StatusCodes.NOT_FOUND);
     }
 
-    return application;
+    return application as unknown as Application;
   },
 
-  async create(payload: CreateApplicationPayload): Promise<Application> {
+  async create(payload: CreateApplicationPayload): Promise<Application & { prefill_url?: string }> {
+    // Check if the drive exists
+    const drive = await DriveModel.findById(payload.drive_id);
+    if (!drive) {
+      throw new AppError('Drive not found', StatusCodes.NOT_FOUND);
+    }
+
     // Check for duplicate application (same student + same drive)
-    const duplicate = Array.from(applications.values()).find(
-      (a) =>
-        a.student_id.toString() === payload.student_id &&
-        a.drive_id.toString() === payload.drive_id &&
-        a.status !== 'rejected',
-    );
+    const duplicate = await ApplicationModel.findOne({
+      student_id: payload.student_id,
+      drive_id: payload.drive_id,
+    });
 
     if (duplicate) {
       throw new AppError(
         'Student has already applied to this drive',
         StatusCodes.CONFLICT,
-        'DUPLICATE_APPLICATION',
+        'ALREADY_APPLIED',
       );
     }
 
-    const application = {
-      _id: new mongoose.Types.ObjectId(),
-      id: generateId(),
+    let prefillUrl: string | undefined;
+
+    if (drive.source_type === 'google_form') {
+      const student = await StudentModel.findById(payload.student_id);
+      if (!student) {
+        throw new AppError('Student profile not found', StatusCodes.NOT_FOUND);
+      }
+
+      // Build Google Form prefilled URL
+      prefillUrl = drive.google_form_url || '';
+      const params = new URLSearchParams();
+
+      if (drive.field_mapping) {
+        for (const [studentField, googleEntryId] of Object.entries(drive.field_mapping)) {
+          let value: any;
+          if (studentField.startsWith('links.')) {
+            const linkKey = studentField.split('.')[1];
+            if (linkKey) {
+              value = student.links?.[linkKey];
+            }
+          } else {
+            value = (student as any)[studentField];
+          }
+
+          if (value !== undefined && value !== null) {
+            params.append(googleEntryId, String(value));
+          }
+        }
+      }
+
+      const queryString = params.toString();
+      if (queryString) {
+        prefillUrl += (prefillUrl.includes('?') ? '&' : '?') + queryString;
+      }
+    }
+
+    const application = await ApplicationModel.create({
       student_id: new mongoose.Types.ObjectId(payload.student_id),
       drive_id: new mongoose.Types.ObjectId(payload.drive_id),
-      status: 'applied',
+      status: payload.status ?? 'applied',
+      custom_answers: drive.source_type === 'native' ? (payload.custom_answers ?? {}) : {},
       applied_at: new Date(),
-      custom_answers: payload.custom_answers ?? {},
-    } as unknown as Application;
+    });
 
-    applications.set(application.id, application);
     logger.info(
-      { applicationId: application.id, studentId: payload.student_id, driveId: payload.drive_id },
+      {
+        applicationId: application._id,
+        studentId: payload.student_id,
+        driveId: payload.drive_id,
+        sourceType: drive.source_type
+      },
       'Application submitted',
     );
 
-    return application;
+    return {
+      ...(application as any).toObject(),
+      prefill_url: prefillUrl,
+    };
   },
 
   async updateStatus(id: string, payload: UpdateApplicationStatusPayload): Promise<Application> {
@@ -126,28 +167,31 @@ export const applicationService = {
       );
     }
 
-    const updated = {
-      ...existing,
-      status: payload.status,
-    } as unknown as Application;
+    const updated = await ApplicationModel.findByIdAndUpdate(
+      id,
+      { $set: { status: payload.status } },
+      { new: true, runValidators: true }
+    );
 
-    applications.set(id, updated);
+    if (!updated) {
+      throw new AppError(`Application with ID "${id}" not found`, StatusCodes.NOT_FOUND);
+    }
+
     logger.info(
       { applicationId: id, from: existing.status, to: payload.status },
       'Application status updated',
     );
 
-    return updated;
+    return updated as unknown as Application;
   },
 
   async delete(id: string): Promise<void> {
-    const exists = applications.has(id);
+    const application = await ApplicationModel.findByIdAndDelete(id);
 
-    if (!exists) {
+    if (!application) {
       throw new AppError(`Application with ID "${id}" not found`, StatusCodes.NOT_FOUND);
     }
 
-    applications.delete(id);
     logger.info({ applicationId: id }, 'Application deleted');
   },
 };

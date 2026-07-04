@@ -4,63 +4,51 @@
  * Handles CRUD, eligibility checks, and status transitions for drives.
  */
 
-import type {
-  Drive,
-  CreateDrivePayload,
-  UpdateDrivePayload,
-} from '../models';
+import type { Drive } from '../models';
+import { DriveModel } from '../models';
+import type { CreateDrivePayload, UpdateDrivePayload } from '../models';
 import type { ListQueryParams, PaginatedResponse } from '../../../shared/src/types/api';
 import { AppError } from '../middleware/error-handler';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 import { PAGINATION } from '../config/constants';
 
-const drives: Map<string, Drive> = new Map();
-
-function generateId(): string {
-  return `drv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
 export const driveService = {
-  async list(query: ListQueryParams): Promise<PaginatedResponse<Drive>> {
+  async list(query: ListQueryParams & { status?: string }): Promise<PaginatedResponse<Drive>> {
     const page = query.page ?? PAGINATION.DEFAULT_PAGE;
     const limit = Math.min(query.limit ?? PAGINATION.DEFAULT_LIMIT, PAGINATION.MAX_LIMIT);
+    const search = query.search;
+    const sortBy = query.sortBy ?? 'createdAt';
+    const sortOrder = query.sortOrder === 'desc' ? -1 : 1;
+    const filter: Record<string, any> = {};
 
-    let items = Array.from(drives.values());
-
-    if (query.search) {
-      const term = query.search.toLowerCase();
-      items = items.filter(
-        (d) =>
-          d.company_name.toLowerCase().includes(term) ||
-          d.role.toLowerCase().includes(term),
-      );
+    // ROOT CAUSE: Previously, the controller/service ignored the status parameter, resulting in a leak
+    // of drafts/closed drives to students (who only had client-side post-filtering on the dashboard).
+    // This also caused page count/pagination bugs due to client-side filtering.
+    // FIX: Extracted and enforced the status filter directly in the MongoDB query.
+    if (query.status) {
+      filter.status = query.status;
     }
 
-    if (query.sortBy) {
-      const sortKey = query.sortBy as keyof Drive;
-      const order = query.sortOrder === 'desc' ? -1 : 1;
-      items.sort((a, b) => {
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-          return aVal.localeCompare(bVal) * order;
-        }
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return (aVal - bVal) * order;
-        }
-        return 0;
-      });
+    if (search) {
+      filter.$or = [
+        { company_name: { $regex: search, $options: 'i' } },
+        { role: { $regex: search, $options: 'i' } },
+      ];
     }
 
-    const total = items.length;
+    const total = await DriveModel.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
     const start = (page - 1) * limit;
-    const data = items.slice(start, start + limit);
+
+    const data = await DriveModel.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(start)
+      .limit(limit);
 
     return {
       success: true,
-      data,
+      data: data as unknown as Drive[],
       pagination: {
         page,
         limit,
@@ -72,13 +60,13 @@ export const driveService = {
   },
 
   async getById(id: string): Promise<Drive> {
-    const drive = drives.get(id);
+    const drive = await DriveModel.findById(id);
 
     if (!drive) {
       throw new AppError(`Drive with ID "${id}" not found`, StatusCodes.NOT_FOUND);
     }
 
-    return drive;
+    return drive as unknown as Drive;
   },
 
   async create(payload: CreateDrivePayload): Promise<Drive> {
@@ -91,18 +79,10 @@ export const driveService = {
       );
     }
 
-    const now = new Date();
-    const drive = {
-      id: generateId(),
-      ...payload,
-      createdAt: now,
-      updatedAt: now,
-    } as unknown as Drive;
+    const drive = await DriveModel.create(payload);
+    logger.info({ driveId: drive._id, company: drive.company_name }, 'Drive created');
 
-    drives.set(drive.id, drive);
-    logger.info({ driveId: drive.id, company: drive.company_name }, 'Drive created');
-
-    return drive;
+    return drive as unknown as Drive;
   },
 
   async update(id: string, payload: UpdateDrivePayload): Promise<Drive> {
@@ -117,26 +97,22 @@ export const driveService = {
       );
     }
 
-    const updated = {
-      ...existing,
-      ...payload,
-      id: existing.id,
-      createdAt: existing.createdAt,
-      updatedAt: new Date(),
-    } as unknown as Drive;
+    const updated = await DriveModel.findByIdAndUpdate(
+      id,
+      { $set: payload },
+      { new: true, runValidators: true }
+    );
 
-    drives.set(id, updated);
+    if (!updated) {
+      throw new AppError(`Drive with ID "${id}" not found`, StatusCodes.NOT_FOUND);
+    }
+
     logger.info({ driveId: id }, 'Drive updated');
-
-    return updated;
+    return updated as unknown as Drive;
   },
 
   async delete(id: string): Promise<void> {
-    const drive = drives.get(id);
-
-    if (!drive) {
-      throw new AppError(`Drive with ID "${id}" not found`, StatusCodes.NOT_FOUND);
-    }
+    const drive = await this.getById(id);
 
     if (drive.status === 'in_progress') {
       throw new AppError(
@@ -146,7 +122,7 @@ export const driveService = {
       );
     }
 
-    drives.delete(id);
+    await DriveModel.findByIdAndDelete(id);
     logger.info({ driveId: id }, 'Drive deleted');
   },
 };

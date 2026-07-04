@@ -8,13 +8,15 @@
 import { Router } from 'express';
 import { applicationController } from '../controllers/application.controller';
 import { asyncHandler } from '../utils/async-handler';
+import { authenticate } from '../middleware/auth.middleware';
+import { isAdmin, isOwner } from '../middleware/authorize.middleware';
 
 const router = Router();
 
-router.get('/', asyncHandler(applicationController.list));
-router.get('/:id', asyncHandler(applicationController.getById));
-router.post('/', asyncHandler(applicationController.create));
-router.patch('/:id/status', asyncHandler(applicationController.updateStatus));
-router.delete('/:id', asyncHandler(applicationController.delete));
+router.get('/', authenticate, asyncHandler(applicationController.list));
+router.get('/:id', authenticate, isOwner('application'), asyncHandler(applicationController.getById));
+router.post('/', authenticate, asyncHandler(applicationController.create));
+router.patch('/:id/status', authenticate, isAdmin, asyncHandler(applicationController.updateStatus));
+router.delete('/:id', authenticate, isAdmin, asyncHandler(applicationController.delete));
 
 export const applicationRoutes = router;

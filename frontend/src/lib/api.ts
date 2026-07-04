@@ -59,6 +59,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const response = await fetch(url, {
     ...fetchOptions,
+    credentials: 'include',
     headers,
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   });
@@ -105,6 +106,10 @@ export const api = {
 
   post<T>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
     return request<ApiResponse<T>>(path, { method: 'POST', body });
+  },
+
+  put<T>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
+    return request<ApiResponse<T>>(path, { method: 'PUT', body });
   },
 
   patch<T>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {

@@ -96,6 +96,49 @@ Import in either package:
 import type { Student, Drive, Application } from '@shared/types';
 ```
 
+## WhatsApp Integration Setup
+
+The backend communicates with a self-hosted **[rmyndharis/OpenWA](https://github.com/rmyndharis/OpenWA)** API gateway via REST API to send placement drive alerts to a designated WhatsApp Group.
+
+### 1. Run the OpenWA Gateway (Separate Service)
+To spin up your WhatsApp API Gateway, clone and run the OpenWA repo on your server or local machine:
+```bash
+git clone https://github.com/rmyndharis/OpenWA.git
+cd OpenWA
+docker compose -f docker-compose.dev.yml up -d
+```
+Once started, access the Dashboard at `http://localhost:2785` to link your WhatsApp device via QR code and retrieve your API Key.
+
+### 2. Configure Backend Environment
+Add the following variables to your `backend/.env` file:
+```env
+OPENWA_API_URL=http://localhost:2785
+OPENWA_API_KEY=your_openwa_api_key
+OPENWA_SESSION_ID=placement-buddy
+WHATSAPP_GROUP_ID=your_whatsapp_group_id
+```
+
+### 3. Fetch Group IDs
+To find the ID of the WhatsApp group you want to notify, run the helper script:
+```bash
+npx tsx backend/scripts/get-whatsapp-groups.ts
+```
+Copy the target Group ID and update your `WHATSAPP_GROUP_ID` environment variable.
+
+### 4. Health & Status Check
+- Access `GET /api/whatsapp/status` to check the current connection state of the WhatsApp session on the gateway.
+
+### 5. Backend Deployment (Standard Docker)
+Since the backend only makes REST requests, the container remains extremely lightweight and does not require chromium libraries.
+- Build the Docker image:
+  ```bash
+  docker build -t placement-backend -f Dockerfile .
+  ```
+- Run the container:
+  ```bash
+  docker run -p 5000:5000 --env-file backend/.env placement-backend
+  ```
+
 ## Design System
 
 The frontend follows a strict design system defined in `frontend/DESIGN.md`. Before building any UI component, read DESIGN.md and follow its tokens exactly (colors, spacing, typography, component patterns).

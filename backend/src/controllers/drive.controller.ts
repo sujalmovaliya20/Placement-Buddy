@@ -10,12 +10,13 @@ import type { CreateDrivePayload, UpdateDrivePayload } from '../models';
 
 export const driveController = {
   async list(req: Request, res: Response): Promise<void> {
-    const query: ListQueryParams = {
+    const query: ListQueryParams & { status?: string } = {
       page: req.query['page'] ? Number(req.query['page']) : undefined,
       limit: req.query['limit'] ? Number(req.query['limit']) : undefined,
       sortBy: req.query['sortBy'] as string | undefined,
       sortOrder: req.query['sortOrder'] as 'asc' | 'desc' | undefined,
       search: req.query['search'] as string | undefined,
+      status: req.forcedStatus || (req.query['status'] as string | undefined),
     };
 
     const result = await driveService.list(query);

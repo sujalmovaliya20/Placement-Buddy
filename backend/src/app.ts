@@ -16,6 +16,8 @@ import { apiRouter } from './routes';
 import { notFoundHandler } from './middleware/not-found';
 import { globalErrorHandler } from './middleware/error-handler';
 import { apiRateLimiter } from './middleware/rate-limiter';
+import cookieParser from 'cookie-parser';
+import { whatsappService } from './services/whatsapp.service';
 
 export function createApp(): express.Application {
   const app = express();
@@ -34,7 +36,8 @@ export function createApp(): express.Application {
   // ── Rate Limiting ─────────────────────────────────────────
   app.use(apiRateLimiter);
 
-  // ── Body parsing ──────────────────────────────────────────
+  // ── Body & Cookie parsing ─────────────────────────────────
+  app.use(cookieParser());
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -73,6 +76,15 @@ export function createApp(): express.Application {
         timestamp: new Date().toISOString(),
         environment: env.NODE_ENV,
       },
+    });
+  });
+
+  // ── WhatsApp status check ──────────────────────────────────
+  app.get('/api/whatsapp/status', (_req, res) => {
+    const connected = whatsappService.isServiceConnected();
+    res.status(200).json({
+      success: true,
+      connected,
     });
   });
 
