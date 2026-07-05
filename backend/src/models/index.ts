@@ -16,12 +16,26 @@ export type { INotificationLog, INotificationLog as NotificationLog } from './no
 
 // Payloads for Creation/Updates expected by controllers & services
 export type CreateStudentPayload = {
-  roll_no: string;
-  name: string;
-  branch: string;
-  cgpa: number;
-  phone: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: Date | string;
   email: string;
+  contact_number: string;
+  present_address: string;
+  course: string;
+  enrollment_number: string;
+  tenth_result: number;
+  twelfth_result: number;
+  cgpa_previous_semester: number;
+  sem1_sgpa?: number | null;
+  sem2_sgpa?: number | null;
+  sem3_sgpa?: number | null;
+  sem4_sgpa?: number | null;
+  sem5_sgpa?: number | null;
+  sem6_sgpa?: number | null;
+  sem7_sgpa?: number | null;
+  sem8_sgpa?: number | null;
+  experience_months?: number;
   password?: string;
   resume_url?: string | null;
   skills?: string[];
@@ -36,6 +50,7 @@ export type CreateDrivePayload = {
   source_type: 'native' | 'google_form';
   google_form_url?: string | null;
   field_mapping?: Record<string, string> | null;
+  manual_field_mapping?: Array<{ form_label: string; profile_field: string }> | null;
   custom_fields?: Array<{ key: string; label: string; type: string; required: boolean }>;
   status?: 'draft' | 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_by: string;

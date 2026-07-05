@@ -132,18 +132,18 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
       <TopBanner>
-        STUDENT PORTAL // PLACEMENT OFFICE DATABASE -- LOGGED IN AS: {student?.name?.toUpperCase()}
+        STUDENT PORTAL // PLACEMENT OFFICE DATABASE -- LOGGED IN AS: {`${student?.first_name || ''} ${student?.last_name || ''}`.trim().toUpperCase()}
       </TopBanner>
 
       <main className="flex-1 p-[24px] space-y-[24px] max-w-7xl mx-auto w-full">
         {/* Navigation / Header Actions */}
         <div className="flex items-center justify-between border-b border-[#000000] pb-[12px]">
-          <div>
+          <div className="flex flex-col gap-[4px]">
             <h1 className="font-arial-black text-heading-1 uppercase leading-none">
-              Welcome back, {student?.name}!
+              Welcome back, {student?.first_name}!
             </h1>
             <p className="font-times-new-roman text-body mt-[4px]">
-              Branch: {student?.branch} | CGPA: {student?.cgpa}
+              Course: {student?.course} | CGPA: {student?.cgpa_previous_semester}
             </p>
           </div>
 

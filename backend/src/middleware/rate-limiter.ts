@@ -1,9 +1,10 @@
 import rateLimit from 'express-rate-limit';
 import { StatusCodes } from 'http-status-codes';
+import { env } from '../config/env';
 
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  limit: env.NODE_ENV === 'development' ? 10000 : 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
   standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   message: {
@@ -18,7 +19,7 @@ export const apiRateLimiter = rateLimit({
 
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 5, // Limit each IP to 5 login attempts per window
+  limit: env.NODE_ENV === 'development' ? 100 : 5, // Limit each IP to 5 login attempts per window
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
@@ -30,4 +31,5 @@ export const loginRateLimiter = rateLimit({
   },
   statusCode: StatusCodes.TOO_MANY_REQUESTS,
 });
+
 

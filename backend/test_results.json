@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "message": "Parsed 6 questions successfully. Skipped 2 non-question items (Quiz Questions, Section/Description).",
+  "dataCount": 6,
+  "data": [
+    {
+      "entryId": "entry.1449005772",
+      "label": "Name",
+      "type": "text"
+    },
+    {
+      "entryId": "entry.1685270148",
+      "label": "Email",
+      "type": "text"
+    },
+    {
+      "entryId": "entry.1842912509",
+      "label": "Your first question?",
+      "type": "select"
+    },
+    {
+      "entryId": "entry.1693510977",
+      "label": "Your second question?",
+      "type": "checkbox"
+    },
+    {
+      "entryId": "entry.262002855",
+      "label": "Your third question?",
+      "type": "text"
+    },
+    {
+      "entryId": "entry.1369130152",
+      "label": "Based on the text above, your fourth question.",
+      "type": "text"
+    }
+  ]
+}

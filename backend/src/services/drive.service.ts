@@ -13,6 +13,16 @@ import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 import { PAGINATION } from '../config/constants';
 
+function normalizeGoogleFormUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const match = trimmed.match(/^(https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[a-zA-Z0-9_-]+)\/edit/);
+  if (match && match[1]) {
+    return `${match[1]}/viewform`;
+  }
+  return trimmed;
+}
+
 export const driveService = {
   async list(query: ListQueryParams & { status?: string }): Promise<PaginatedResponse<Drive>> {
     const page = query.page ?? PAGINATION.DEFAULT_PAGE;
@@ -79,6 +89,10 @@ export const driveService = {
       );
     }
 
+    if (payload.google_form_url) {
+      payload.google_form_url = normalizeGoogleFormUrl(payload.google_form_url) as string;
+    }
+
     const drive = await DriveModel.create(payload);
     logger.info({ driveId: drive._id, company: drive.company_name }, 'Drive created');
 
@@ -95,6 +109,10 @@ export const driveService = {
         StatusCodes.CONFLICT,
         'DRIVE_FINALIZED',
       );
+    }
+
+    if (payload.google_form_url) {
+      payload.google_form_url = normalizeGoogleFormUrl(payload.google_form_url) as string;
     }
 
     const updated = await DriveModel.findByIdAndUpdate(

@@ -19,3 +19,4 @@ router.get('/drives/:id/export', asyncHandler(adminDriveController.exportApplica
 router.post('/drives/:id/notify', asyncHandler(adminDriveController.notify));
 
 export const adminRoutes = router;
+

@@ -103,7 +103,15 @@ export const applicationService = {
       }
 
       // Build Google Form prefilled URL
-      prefillUrl = drive.google_form_url || '';
+      const baseFormUrl = (() => {
+        const url = drive.google_form_url || '';
+        const match = url.trim().match(/^(https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[a-zA-Z0-9_-]+)\/edit/);
+        if (match && match[1]) {
+          return `${match[1]}/viewform`;
+        }
+        return url;
+      })();
+      prefillUrl = baseFormUrl;
       const params = new URLSearchParams();
 
       if (drive.field_mapping) {
@@ -119,7 +127,11 @@ export const applicationService = {
           }
 
           if (value !== undefined && value !== null) {
-            params.append(googleEntryId, String(value));
+            if (/^entry\.\d+$/.test(googleEntryId)) {
+              params.append(googleEntryId, String(value));
+            } else {
+              logger.warn({ googleEntryId, studentField }, 'Skipped invalid googleEntryId pattern in prefill URL builder');
+            }
           }
         }
       }
@@ -185,13 +197,26 @@ export const applicationService = {
     return updated as unknown as Application;
   },
 
-  async delete(id: string): Promise<void> {
-    const application = await ApplicationModel.findByIdAndDelete(id);
-
+  async delete(id: string, user?: { id: string; role: string }): Promise<void> {
+    const application = await ApplicationModel.findById(id);
     if (!application) {
       throw new AppError(`Application with ID "${id}" not found`, StatusCodes.NOT_FOUND);
     }
 
+    if (user && user.role !== 'tpo' && user.role !== 'superadmin') {
+      const drive = await DriveModel.findById(application.drive_id);
+      if (!drive) {
+        throw new AppError('Drive associated with application not found', StatusCodes.NOT_FOUND);
+      }
+      if (drive.status !== 'open') {
+        throw new AppError('Cannot withdraw application. Drive is no longer open.', StatusCodes.BAD_REQUEST);
+      }
+      if (new Date(drive.deadline) <= new Date()) {
+        throw new AppError('Cannot withdraw application. The deadline has passed.', StatusCodes.BAD_REQUEST);
+      }
+    }
+
+    await ApplicationModel.findByIdAndDelete(id);
     logger.info({ applicationId: id }, 'Application deleted');
   },
 };

@@ -34,7 +34,7 @@ export default function HomePage() {
               ★ ATTENTION STUDENTS ★
             </span>
             <span className="font-times-new-roman text-body block">
-              Please sign up with your valid college domain email address (@college.edu) to submit applications for the active placement cycle.
+              Please sign up with your valid college domain email address (@college.edu) or Gmail address (@gmail.com) to submit applications for the active placement cycle.
             </span>
           </CtaBlockRed>
 

@@ -96,7 +96,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@college.edu"
+                placeholder="you@college.edu or you@gmail.com"
                 disabled={isLoading}
                 error={errors.email}
               />

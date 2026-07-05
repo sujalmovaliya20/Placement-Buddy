@@ -7,6 +7,11 @@ export interface ICustomField {
   required: boolean;
 }
 
+export interface IManualFieldMapping {
+  form_label: string;
+  profile_field: string;
+}
+
 export interface IDrive extends Document {
   company_name: string;
   role: string;
@@ -14,6 +19,7 @@ export interface IDrive extends Document {
   source_type: 'native' | 'google_form';
   google_form_url: string | null;
   field_mapping: Record<string, string> | null;
+  manual_field_mapping: IManualFieldMapping[] | null;
   custom_fields: ICustomField[];
   status: 'draft' | 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_by: Types.ObjectId;
@@ -70,6 +76,13 @@ const driveSchema = new Schema<IDrive>(
     },
     field_mapping: {
       type: Schema.Types.Mixed,
+      default: null,
+    },
+    manual_field_mapping: {
+      type: [{
+        form_label: { type: String, required: true },
+        profile_field: { type: String, required: true }
+      }],
       default: null,
     },
     custom_fields: {

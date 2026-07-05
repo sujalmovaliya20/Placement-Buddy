@@ -81,7 +81,7 @@ export const applicationController = {
   },
 
   async delete(req: Request, res: Response): Promise<void> {
-    await applicationService.delete(req.params['id'] as string);
+    await applicationService.delete(req.params['id'] as string, req.user);
 
     res.status(StatusCodes.NO_CONTENT).send();
   },

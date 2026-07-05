@@ -3,12 +3,26 @@ import { env } from '../config/env';
 import bcrypt from 'bcryptjs';
 
 export interface IStudent extends Document {
-  roll_no: string;
-  name: string;
-  branch: string;
-  cgpa: number;
-  phone: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: Date;
   email: string;
+  contact_number: string;
+  present_address: string;
+  course: string;
+  enrollment_number: string;
+  tenth_result: number;
+  twelfth_result: number;
+  cgpa_previous_semester: number;
+  sem1_sgpa?: number | null;
+  sem2_sgpa?: number | null;
+  sem3_sgpa?: number | null;
+  sem4_sgpa?: number | null;
+  sem5_sgpa?: number | null;
+  sem6_sgpa?: number | null;
+  sem7_sgpa?: number | null;
+  sem8_sgpa?: number | null;
+  experience_months?: number;
   password?: string;
   resume_url: string | null;
   skills: string[];
@@ -24,34 +38,19 @@ export interface IStudent extends Document {
 
 const studentSchema = new Schema<IStudent>(
   {
-    roll_no: {
+    first_name: {
       type: String,
-      required: [true, 'Roll number is required'],
-      unique: true,
-      trim: true,
-      index: true,
-    },
-    name: {
-      type: String,
-      required: [true, 'Student name is required'],
+      required: [true, 'First name is required'],
       trim: true,
     },
-    branch: {
+    last_name: {
       type: String,
-      required: [true, 'Branch is required'],
+      required: [true, 'Last name is required'],
       trim: true,
     },
-    cgpa: {
-      type: Number,
-      required: [true, 'CGPA is required'],
-      min: [0, 'CGPA cannot be less than 0'],
-      max: [10, 'CGPA cannot be greater than 10'],
-    },
-    phone: {
-      type: String,
-      required: [true, 'Phone number is required'],
-      trim: true,
-      match: [/^\+?[0-9\s-]{10,20}$/, 'Please provide a valid phone number (10 to 20 digits, optionally starting with +)'],
+    date_of_birth: {
+      type: Date,
+      required: [true, 'Date of birth is required'],
     },
     email: {
       type: String,
@@ -61,10 +60,65 @@ const studentSchema = new Schema<IStudent>(
       lowercase: true,
       validate: {
         validator: function (v: string) {
-          return v.endsWith(`@${env.COLLEGE_EMAIL_DOMAIN}`);
+          const email = v.toLowerCase();
+          return email.endsWith(`@${env.COLLEGE_EMAIL_DOMAIN}`) || email.endsWith('@gmail.com');
         },
-        message: (props) => `${props.value} is not a valid college email address. It must end with @${env.COLLEGE_EMAIL_DOMAIN}`,
+        message: (props) => `${props.value} is not a valid email address. It must end with @${env.COLLEGE_EMAIL_DOMAIN} or @gmail.com`,
       },
+    },
+    contact_number: {
+      type: String,
+      required: [true, 'Contact number is required'],
+      trim: true,
+      match: [/^[6-9]\d{9}$/, 'Please provide a valid 10-digit Indian mobile number'],
+    },
+    present_address: {
+      type: String,
+      required: [true, 'Present address is required'],
+      trim: true,
+    },
+    course: {
+      type: String,
+      required: [true, 'Course is required'],
+      trim: true,
+    },
+    enrollment_number: {
+      type: String,
+      required: [true, 'Enrollment number is required'],
+      unique: true,
+      trim: true,
+      index: true,
+    },
+    tenth_result: {
+      type: Number,
+      required: [true, '10th result percentage is required'],
+      min: [0, '10th result cannot be less than 0'],
+      max: [100, '10th result cannot be greater than 100'],
+    },
+    twelfth_result: {
+      type: Number,
+      required: [true, '12th result percentage is required'],
+      min: [0, '12th result cannot be less than 0'],
+      max: [100, '12th result cannot be greater than 100'],
+    },
+    cgpa_previous_semester: {
+      type: Number,
+      required: [true, 'CGPA is required'],
+      min: [0, 'CGPA cannot be less than 0'],
+      max: [10, 'CGPA cannot be greater than 10'],
+    },
+    sem1_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem2_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem3_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem4_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem5_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem6_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem7_sgpa: { type: Number, min: 0, max: 10, default: null },
+    sem8_sgpa: { type: Number, min: 0, max: 10, default: null },
+    experience_months: {
+      type: Number,
+      default: 0,
+      min: [0, 'Experience months cannot be negative'],
     },
     password: {
       type: String,

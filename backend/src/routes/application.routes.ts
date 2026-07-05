@@ -17,6 +17,6 @@ router.get('/', authenticate, asyncHandler(applicationController.list));
 router.get('/:id', authenticate, isOwner('application'), asyncHandler(applicationController.getById));
 router.post('/', authenticate, asyncHandler(applicationController.create));
 router.patch('/:id/status', authenticate, isAdmin, asyncHandler(applicationController.updateStatus));
-router.delete('/:id', authenticate, isAdmin, asyncHandler(applicationController.delete));
+router.delete('/:id', authenticate, isOwner('application'), asyncHandler(applicationController.delete));
 
 export const applicationRoutes = router;

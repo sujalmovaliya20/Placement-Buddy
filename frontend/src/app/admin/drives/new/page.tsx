@@ -56,6 +56,11 @@ export default function AdminNewDrivePage() {
   const [isSavingMapping, setIsSavingMapping] = useState(false);
   const [mappingSaved, setMappingSaved] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [requiresManualFill, setRequiresManualFill] = useState(false);
+  const [manualFields, setManualFields] = useState<Array<{ form_label: string; profile_field: string }>>([
+    { form_label: '', profile_field: '' }
+  ]);
+
 
   // Verify Admin Access
   useEffect(() => {
@@ -106,8 +111,12 @@ export default function AdminNewDrivePage() {
           if (drive.source_type === 'google_form') {
             setGoogleFormUrl(drive.google_form_url || '');
             setStep(2);
-            // Pre-populate any existing mapping in reverse (backend has studentField -> entryId, we map entryId -> studentField in dropdowns)
-            if (drive.field_mapping) {
+            if (drive.manual_field_mapping && drive.manual_field_mapping.length > 0) {
+              setRequiresManualFill(true);
+              setManualFields(drive.manual_field_mapping);
+              setMappingSaved(true);
+            } else if (drive.field_mapping) {
+              setRequiresManualFill(false);
               const initialMappingState: Record<string, string> = {};
               Object.entries(drive.field_mapping).forEach(([studentField, entryId]) => {
                 if (entryId) {
@@ -260,10 +269,20 @@ export default function AdminNewDrivePage() {
       });
 
       // 2. Parse form
-      const res = await api.post<FormField[]>(`/admin/drives/${createdDriveId}/parse-google-form`, {});
+      const res = await api.post<any>(`/admin/drives/${createdDriveId}/parse-google-form`, {
+        googleFormUrl: urlStr,
+      });
       if (res.success && res.data) {
-        setParsedFields(res.data);
-        toastSuccess('Successfully parsed input fields from Google Form.');
+        if (res.data.requires_manual_fill) {
+          setRequiresManualFill(true);
+          setManualFields([{ form_label: '', profile_field: '' }]);
+          setParsedFields([]);
+          toastSuccess('This restricted form requires manual mapping setup.');
+        } else {
+          setRequiresManualFill(false);
+          setParsedFields(res.data);
+          toastSuccess('Successfully parsed input fields from Google Form.');
+        }
       }
     } catch (err: any) {
       toastError(err.message || 'Failed to parse Google Form. Ensure form is public.');
@@ -272,11 +291,20 @@ export default function AdminNewDrivePage() {
     }
   };
 
-  const handleDropdownMappingChange = (entryId: string, studentField: string) => {
-    setFieldMappings((prev) => ({
-      ...prev,
-      [entryId]: studentField,
-    }));
+  const handleAddManualRow = () => {
+    setManualFields((prev) => [...prev, { form_label: '', profile_field: '' }]);
+  };
+
+  const handleRemoveManualRow = (index: number) => {
+    setManualFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleManualRowChange = (index: number, key: 'form_label' | 'profile_field', value: string) => {
+    setManualFields((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [key]: value };
+      return next;
+    });
   };
 
   // Step 2: Save field mapping
@@ -285,21 +313,36 @@ export default function AdminNewDrivePage() {
     setIsSavingMapping(true);
 
     try {
-      // Build the standard { studentField: entryId } structure for the backend database
-      const payloadMapping: Record<string, string> = {};
-      Object.entries(fieldMappings).forEach(([entryId, studentField]) => {
-        if (studentField && studentField !== 'custom') {
-          payloadMapping[studentField] = entryId;
+      let payload: any = {};
+      if (requiresManualFill) {
+        const cleaned = manualFields.filter((f) => f.form_label.trim() !== '');
+        if (cleaned.length === 0) {
+          toastError('Please define at least one form field mapping row.');
+          setIsSavingMapping(false);
+          return;
         }
-      });
+        payload = {
+          manual_field_mapping: cleaned,
+          field_mapping: null,
+        };
+      } else {
+        const payloadMapping: Record<string, string> = {};
+        Object.entries(fieldMappings).forEach(([entryId, studentField]) => {
+          if (studentField && studentField !== 'custom') {
+            payloadMapping[studentField] = entryId;
+          }
+        });
+        payload = {
+          field_mapping: payloadMapping,
+          manual_field_mapping: null,
+        };
+      }
 
-      const res = await api.put<any>(`/admin/drives/${createdDriveId}/mapping`, {
-        field_mapping: payloadMapping,
-      });
+      const res = await api.put<any>(`/admin/drives/${createdDriveId}/mapping`, payload);
 
       if (res.success) {
         setMappingSaved(true);
-        toastSuccess('Google Form mapping configuration saved successfully.');
+        toastSuccess('Field mapping configuration saved successfully.');
       }
     } catch (err: any) {
       toastError(err.message || 'Failed to save field mapping.');
@@ -422,11 +465,10 @@ export default function AdminNewDrivePage() {
                     <button
                       type="button"
                       onClick={() => setSourceType('native')}
-                      className={`flex-1 ${
-                        sourceType === 'native'
+                      className={`flex-1 ${sourceType === 'native'
                           ? 'bg-[#000000] text-[#ffffff] border border-[#000000]'
                           : 'bg-[#ffffff] text-[#000000] border border-[#000000]'
-                      } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
+                        } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
                       disabled={isSubmitting}
                     >
                       NATIVE REGISTRATION FORM
@@ -434,11 +476,10 @@ export default function AdminNewDrivePage() {
                     <button
                       type="button"
                       onClick={() => setSourceType('google_form')}
-                      className={`flex-1 ${
-                        sourceType === 'google_form'
+                      className={`flex-1 ${sourceType === 'google_form'
                           ? 'bg-[#000000] text-[#ffffff] border border-[#000000]'
                           : 'bg-[#ffffff] text-[#000000] border border-[#000000]'
-                      } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
+                        } font-helvetica text-button font-bold px-[16px] py-[6px] rounded-none justify-center`}
                       disabled={isSubmitting}
                     >
                       GOOGLE FORMS REDIRECT
@@ -544,8 +585,8 @@ export default function AdminNewDrivePage() {
                   {isSubmitting
                     ? 'SAVING BASICS...'
                     : sourceType === 'google_form'
-                    ? 'NEXT: CONFIGURE GOOGLE FORM MAPPING →'
-                    : 'SAVE RECRUITMENT DRIVE'}
+                      ? 'NEXT: CONFIGURE GOOGLE FORM MAPPING →'
+                      : 'SAVE RECRUITMENT DRIVE'}
                 </ButtonPrimary>
               </div>
             </form>
@@ -554,23 +595,25 @@ export default function AdminNewDrivePage() {
           <RibbonCard title="STEP 2: GOOGLE FORM PARSING & MAPPING" variant="steel">
             <div className="space-y-[20px]">
               {/* Google Form URL Setup */}
-              <div className="space-y-[8px]">
-                <div className="flex flex-col md:flex-row gap-[12px] items-end">
-                  <div className="flex-1">
-                    <TextInput
-                      label="Google Form URL (Must be public)"
-                      placeholder="https://docs.google.com/forms/d/e/.../viewform"
-                      value={googleFormUrl}
-                      onChange={(e) => setGoogleFormUrl(e.target.value)}
-                      disabled={isParsing}
-                    />
-                  </div>
+              <div className="space-y-[16px]">
+                <div className="grid grid-cols-1 gap-[16px]">
+                  <TextInput
+                    label="Public Form Link (for students)"
+                    placeholder="https://docs.google.com/forms/d/e/.../viewform"
+                    required
+                    value={googleFormUrl}
+                    onChange={(e) => setGoogleFormUrl(e.target.value)}
+                    disabled={isParsing}
+                  />
+
+                </div>
+
+                <div className="flex justify-end pt-[4px]">
                   <ButtonPrimary
                     onClick={() => handleParseGoogleForm(googleFormUrl)}
                     disabled={isParsing}
-                    className="h-[34px]"
                   >
-                    PARSE FORM
+                    PARSE GOOGLE FORM
                   </ButtonPrimary>
                 </div>
               </div>
@@ -582,6 +625,83 @@ export default function AdminNewDrivePage() {
                 </div>
               )}
 
+              {/* Manual Mapping Table */}
+              {!isParsing && requiresManualFill && (
+                <div className="space-y-[12px]">
+                  <div className="font-helvetica text-heading-3 uppercase font-bold">
+                    Manual Field Mapping Rules
+                  </div>
+                  <p className="font-times-new-roman text-body-sm">
+                    This form is restricted or login-protected. Define the fields you want students to copy-paste manually.
+                  </p>
+
+                  <div className="space-y-[12px] max-w-full">
+                    {manualFields.map((field, idx) => (
+                      <div key={idx} className="flex gap-[8px] items-end border border-black p-[12px] bg-white">
+                        <div className="flex-1">
+                          <TextInput
+                            label="Form Field Label (e.g. Full Name)"
+                            placeholder="Enter the label on the Google Form"
+                            value={field.form_label}
+                            onChange={(e) => handleManualRowChange(idx, 'form_label', e.target.value)}
+                          />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-[4px]">
+                          <label className="font-helvetica text-ui-label text-ink select-none font-bold">
+                            Maps to Profile Field
+                          </label>
+                          <select
+                            value={field.profile_field}
+                            onChange={(e) => handleManualRowChange(idx, 'profile_field', e.target.value)}
+                            className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[8px] rounded-none focus:outline-none w-full h-[38px]"
+                          >
+                            <option value="">Select Profile Field...</option>
+                            <option value="first_name">First Name (first_name)</option>
+                            <option value="last_name">Last Name (last_name)</option>
+                            <option value="date_of_birth">Date of Birth (date_of_birth)</option>
+                            <option value="email">Email Address (email)</option>
+                            <option value="contact_number">Contact Number (contact_number)</option>
+                            <option value="present_address">Present Address (present_address)</option>
+                            <option value="course">Course (course)</option>
+                            <option value="enrollment_number">Enrollment Number (enrollment_number)</option>
+                            <option value="tenth_result">10th Result % (tenth_result)</option>
+                            <option value="twelfth_result">12th Result % (twelfth_result)</option>
+                            <option value="cgpa_previous_semester">CGPA Prev Semester (cgpa_previous_semester)</option>
+                            <option value="sem1_sgpa">Sem 1 SGPA (sem1_sgpa)</option>
+                            <option value="sem2_sgpa">Sem 2 SGPA (sem2_sgpa)</option>
+                            <option value="sem3_sgpa">Sem 3 SGPA (sem3_sgpa)</option>
+                            <option value="sem4_sgpa">Sem 4 SGPA (sem4_sgpa)</option>
+                            <option value="sem5_sgpa">Sem 5 SGPA (sem5_sgpa)</option>
+                            <option value="sem6_sgpa">Sem 6 SGPA (sem6_sgpa)</option>
+                            <option value="sem7_sgpa">Sem 7 SGPA (sem7_sgpa)</option>
+                            <option value="sem8_sgpa">Sem 8 SGPA (sem8_sgpa)</option>
+                            <option value="experience_months">Experience Months (experience_months)</option>
+                            <option value="resume_url">Resume Link (resume_url)</option>
+                          </select>
+                        </div>
+                        <ButtonSecondary type="button" onClick={() => handleRemoveManualRow(idx)} className="h-[38px] text-red-600 border-red-600 hover:bg-red-50">
+                          DELETE
+                        </ButtonSecondary>
+                      </div>
+                    ))}
+                    <div className="flex pt-[8px]">
+                      <ButtonSecondary type="button" onClick={handleAddManualRow}>
+                        + ADD MAPPING ROW
+                      </ButtonSecondary>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-[12px] pt-[12px] border-t border-[#000000]">
+                    <ButtonSecondary onClick={() => setStep(1)}>
+                      ← MODIFY BASICS
+                    </ButtonSecondary>
+                    <ButtonPrimary onClick={handleSaveMapping} disabled={isSavingMapping}>
+                      {isSavingMapping ? 'SAVING MAPPING...' : 'SAVE MAPPING'}
+                    </ButtonPrimary>
+                  </div>
+                </div>
+              )}
+
               {/* Parsed Fields Mapping Table */}
               {!isParsing && parsedFields.length > 0 && (
                 <div className="space-y-[12px]">
@@ -589,7 +709,7 @@ export default function AdminNewDrivePage() {
                     Field Mapping Rules
                   </div>
                   <p className="font-times-new-roman text-body-sm">
-                    Map each detected Google Form field (left) to a student profile attribute (right). 
+                    Map each detected Google Form field (left) to a student profile attribute (right).
                     Select "Custom" if the student must fill it manually.
                   </p>
 
@@ -619,18 +739,31 @@ export default function AdminNewDrivePage() {
                               <td className="px-[12px] py-[8px]">
                                 <select
                                   value={currentVal}
-                                  onChange={(e) => handleDropdownMappingChange(field.entryId, e.target.value)}
+                                  onChange={(e) => setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }))}
                                   className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[4px] rounded-none focus:outline-none w-full"
                                 >
                                   <option value="">Custom — student fills manually</option>
-                                  <option value="name">Full Name (name)</option>
-                                  <option value="roll_no">Roll Number (roll_no)</option>
-                                  <option value="branch">Branch (branch)</option>
-                                  <option value="cgpa">CGPA (cgpa)</option>
-                                  <option value="phone">Phone Number (phone)</option>
-                                  <option value="email">College Email (email)</option>
+                                  <option value="first_name">First Name (first_name)</option>
+                                  <option value="last_name">Last Name (last_name)</option>
+                                  <option value="date_of_birth">Date of Birth (date_of_birth)</option>
+                                  <option value="email">Email Address (email)</option>
+                                  <option value="contact_number">Contact Number (contact_number)</option>
+                                  <option value="present_address">Present Address (present_address)</option>
+                                  <option value="course">Course (course)</option>
+                                  <option value="enrollment_number">Enrollment Number (enrollment_number)</option>
+                                  <option value="tenth_result">10th Result % (tenth_result)</option>
+                                  <option value="twelfth_result">12th Result % (twelfth_result)</option>
+                                  <option value="cgpa_previous_semester">CGPA Prev Semester (cgpa_previous_semester)</option>
+                                  <option value="sem1_sgpa">Sem 1 SGPA (sem1_sgpa)</option>
+                                  <option value="sem2_sgpa">Sem 2 SGPA (sem2_sgpa)</option>
+                                  <option value="sem3_sgpa">Sem 3 SGPA (sem3_sgpa)</option>
+                                  <option value="sem4_sgpa">Sem 4 SGPA (sem4_sgpa)</option>
+                                  <option value="sem5_sgpa">Sem 5 SGPA (sem5_sgpa)</option>
+                                  <option value="sem6_sgpa">Sem 6 SGPA (sem6_sgpa)</option>
+                                  <option value="sem7_sgpa">Sem 7 SGPA (sem7_sgpa)</option>
+                                  <option value="sem8_sgpa">Sem 8 SGPA (sem8_sgpa)</option>
+                                  <option value="experience_months">Experience Months (experience_months)</option>
                                   <option value="resume_url">Resume Link (resume_url)</option>
-                                  <option value="skills">Skills list (skills)</option>
                                 </select>
                               </td>
                             </tr>

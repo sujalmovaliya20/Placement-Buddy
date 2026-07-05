@@ -22,11 +22,22 @@ import { whatsappService } from './services/whatsapp.service';
 export function createApp(): express.Application {
   const app = express();
 
+  // Trust proxy for rate limiting (e.g. behind Nginx, Cloudflare)
+  app.set('trust proxy', 1);
+
   // ── Security ──────────────────────────────────────────────
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        const allowedOrigins = [env.CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
+        const isAllowed = allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        callback(null, isAllowed);
+      },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,

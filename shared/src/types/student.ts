@@ -4,51 +4,69 @@
  * Used by both frontend (profile display, forms) and backend (validation, queries).
  */
 
-export type PlacementStatus = 'unplaced' | 'placed' | 'opted_out' | 'not_eligible';
-
-export type Department =
-  | 'computer_science'
-  | 'information_technology'
-  | 'electronics'
-  | 'electrical'
-  | 'mechanical'
-  | 'civil'
-  | 'chemical'
-  | 'other';
-
 export interface Student {
-  /** Unique identifier (UUID or database-generated ID) */
+  /** Unique database-generated ID */
   id: string;
 
-  /** Full name of the student */
-  name: string;
+  /** First name of the student */
+  first_name: string;
 
-  /** Institutional email address (unique) */
+  /** Last name of the student */
+  last_name: string;
+
+  /** Date of birth (YYYY-MM-DD string representation) */
+  date_of_birth: string;
+
+  /** Institutional or Gmail address (unique) */
   email: string;
 
-  /** Contact phone number with country code */
-  phone: string;
+  /** Contact phone number (10 digit Indian number) */
+  contact_number: string;
 
-  /** Academic department */
-  department: Department;
+  /** Present address of the student */
+  present_address: string;
 
-  /** Cumulative Grade Point Average (0.0 – 10.0) */
-  cgpa: number;
+  /** Course enrolled (e.g. B.Tech Computer Engineering) */
+  course: string;
+
+  /** Enrollment/registration number (unique, indexed) */
+  enrollment_number: string;
+
+  /** 10th class result percentage (0-100) */
+  tenth_result: number;
+
+  /** 12th class result percentage (0-100) */
+  twelfth_result: number;
+
+  /** Cumulative Grade Point Average up to previous semester (0.0 – 10.0) */
+  cgpa_previous_semester: number;
+
+  // Semester wise SGPA (optional & nullable)
+  sem1_sgpa?: number | null;
+  sem2_sgpa?: number | null;
+  sem3_sgpa?: number | null;
+  sem4_sgpa?: number | null;
+  sem5_sgpa?: number | null;
+  sem6_sgpa?: number | null;
+  sem7_sgpa?: number | null;
+  sem8_sgpa?: number | null;
+
+  /** Months of professional experience (default 0) */
+  experience_months?: number;
 
   /** URL to the uploaded resume (cloud storage path) */
-  resumeUrl: string | null;
+  resume_url: string | null;
 
   /** List of skill tags */
-  skills: string[];
+  skills?: string[];
 
-  /** Current placement status */
-  placementStatus: PlacementStatus;
-
-  /** Enrollment/registration number */
-  enrollmentNumber: string;
-
-  /** Graduation year */
-  graduationYear: number;
+  /** Social media links */
+  links?: {
+    github?: string;
+    linkedin?: string;
+    portfolio?: string;
+    [key: string]: any;
+  };
 
   /** ISO 8601 timestamp */
   createdAt: string;
@@ -57,8 +75,8 @@ export interface Student {
   updatedAt: string;
 }
 
-/** Payload for creating a new student (server assigns id + timestamps) */
+/** Payload for creating a new student */
 export type CreateStudentPayload = Omit<Student, 'id' | 'createdAt' | 'updatedAt'>;
 
-/** Payload for updating an existing student (all fields optional) */
+/** Payload for updating an existing student */
 export type UpdateStudentPayload = Partial<CreateStudentPayload>;

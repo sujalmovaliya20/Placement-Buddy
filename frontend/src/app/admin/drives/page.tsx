@@ -20,11 +20,12 @@ interface Drive {
 }
 
 interface Student {
-  roll_no: string;
-  name: string;
-  branch: string;
-  cgpa: number;
-  phone: string;
+  enrollment_number: string;
+  first_name: string;
+  last_name: string;
+  course: string;
+  cgpa_previous_semester: number;
+  contact_number: string;
   email: string;
 }
 
@@ -43,12 +44,13 @@ interface FormField {
 }
 
 const STUDENT_FIELDS = [
-  { key: 'name', label: 'Full Name' },
-  { key: 'email', label: 'College Email' },
-  { key: 'roll_no', label: 'Roll Number' },
-  { key: 'branch', label: 'Branch / Specialization' },
-  { key: 'cgpa', label: 'CGPA' },
-  { key: 'phone', label: 'Phone Number' },
+  { key: 'first_name', label: 'First Name' },
+  { key: 'last_name', label: 'Last Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'enrollment_number', label: 'Enrollment Number' },
+  { key: 'course', label: 'Course' },
+  { key: 'cgpa_previous_semester', label: 'CGPA (Prev Sem)' },
+  { key: 'contact_number', label: 'Contact Number' },
 ];
 
 export default function AdminDrivesPage() {
@@ -64,12 +66,12 @@ export default function AdminDrivesPage() {
   const [applications, setApplications] = useState<Record<string, Application[]>>({});
   const [loadingApps, setLoadingApps] = useState<Record<string, boolean>>({});
   const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
-  
+
   // Google Form parsing & mapping state
   const [formFields, setFormFields] = useState<Record<string, FormField[]>>({});
   const [loadingFields, setLoadingFields] = useState<Record<string, boolean>>({});
   const [mappings, setMappings] = useState<Record<string, Record<string, string>>>({});
-  
+
   // Notification status state
   const [sendingNotify, setSendingNotify] = useState<Record<string, boolean>>({});
 
@@ -94,12 +96,13 @@ export default function AdminDrivesPage() {
           drivesList.forEach((d) => {
             if (d.source_type === 'google_form') {
               initialMappings[d._id] = d.field_mapping || {
-                name: '',
+                first_name: '',
+                last_name: '',
                 email: '',
-                roll_no: '',
-                branch: '',
-                cgpa: '',
-                phone: '',
+                enrollment_number: '',
+                course: '',
+                cgpa_previous_semester: '',
+                contact_number: '',
               };
             }
           });
@@ -353,7 +356,7 @@ export default function AdminDrivesPage() {
                             </ButtonPrimary>
                           </Link>
                         )}
-                        <ButtonSecondary 
+                        <ButtonSecondary
                           onClick={() => handleToggleExpand(drive._id)}
                           className="text-center"
                         >
@@ -364,7 +367,7 @@ export default function AdminDrivesPage() {
 
                     {isExpanded && (
                       <div className="space-y-[24px] pt-[8px]">
-                        
+
                         {/* Quick Action Bar */}
                         <div className="flex flex-wrap gap-[12px]">
                           <ButtonPrimary
@@ -373,7 +376,7 @@ export default function AdminDrivesPage() {
                           >
                             {isNotifySending ? 'DISPATCHING WHATSAPP...' : '🔊 DISPATCH WHATSAPP NOTIFICATION'}
                           </ButtonPrimary>
-                          
+
                           <a
                             href={`${baseUrl}/admin/drives/${drive._id}/export`}
                             target="_blank"
@@ -465,16 +468,16 @@ export default function AdminDrivesPage() {
                                 <thead>
                                   <tr className="bg-[#ffffff]">
                                     <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Roll No
+                                      Enrollment No
                                     </th>
                                     <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
                                       Name
                                     </th>
                                     <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Branch
+                                      Course
                                     </th>
                                     <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      CGPA
+                                      CGPA (Prev Sem)
                                     </th>
                                     <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
                                       Status
@@ -488,22 +491,21 @@ export default function AdminDrivesPage() {
                                   {driveApps.map((app) => (
                                     <tr key={app._id} className="border-b border-[#000000] last:border-b-0">
                                       <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.roll_no}
+                                        {app.student_id?.enrollment_number}
                                       </td>
                                       <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000] font-bold">
-                                        {app.student_id?.name}
+                                        {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
                                       </td>
                                       <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.branch}
+                                        {app.student_id?.course}
                                       </td>
                                       <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.cgpa}
+                                        {app.student_id?.cgpa_previous_semester}
                                       </td>
                                       <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        <span className={`font-bold uppercase ${
-                                          app.status === 'shortlisted' ? 'text-[#8e8a25]' : 
-                                          app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
-                                        }`}>
+                                        <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
+                                            app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
+                                          }`}>
                                           {app.status}
                                         </span>
                                       </td>

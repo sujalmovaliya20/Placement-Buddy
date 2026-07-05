@@ -26,10 +26,11 @@ export const authController = {
     try {
       const payload = req.body;
 
-      // Validate email domain matches COLLEGE_EMAIL_DOMAIN
-      if (!payload.email.endsWith(`@${env.COLLEGE_EMAIL_DOMAIN}`)) {
+      // Validate email domain matches COLLEGE_EMAIL_DOMAIN or gmail.com
+      const email = payload.email.toLowerCase();
+      if (!email.endsWith(`@${env.COLLEGE_EMAIL_DOMAIN}`) && !email.endsWith('@gmail.com')) {
         throw new AppError(
-          `Institutional email must end with @${env.COLLEGE_EMAIL_DOMAIN}`,
+          `Email must end with @${env.COLLEGE_EMAIL_DOMAIN} or be a Gmail address (@gmail.com)`,
           StatusCodes.BAD_REQUEST,
           'INVALID_EMAIL_DOMAIN'
         );
@@ -45,13 +46,13 @@ export const authController = {
         );
       }
 
-      // Check for duplicate roll number
-      const existingRoll = await StudentModel.findOne({ roll_no: payload.roll_no });
-      if (existingRoll) {
+      // Check for duplicate enrollment number
+      const existingEnrollment = await StudentModel.findOne({ enrollment_number: payload.enrollment_number });
+      if (existingEnrollment) {
         throw new AppError(
-          'A student with this roll number already exists',
+          'A student with this enrollment number already exists',
           StatusCodes.CONFLICT,
-          'DUPLICATE_ROLL_NO'
+          'DUPLICATE_ENROLLMENT_NO'
         );
       }
 
@@ -200,3 +201,4 @@ export const authController = {
     }
   },
 };
+

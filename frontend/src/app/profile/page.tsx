@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '@/lib/api';
 import { updateProfileSchema } from '@shared/index';
 import type { UpdateProfileInput } from '@shared/index';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, TextLink } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -31,22 +31,41 @@ export default function ProfilePage() {
   } = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      name: '',
-      phone: '',
-      roll_no: '',
-      branch: '',
-      cgpa: undefined,
+      first_name: '',
+      last_name: '',
+      date_of_birth: '',
+      contact_number: '',
+      present_address: '',
+      course: '',
+      enrollment_number: '',
+      tenth_result: undefined,
+      twelfth_result: undefined,
+      cgpa_previous_semester: undefined,
+      sem1_sgpa: null,
+      sem2_sgpa: null,
+      sem3_sgpa: null,
+      sem4_sgpa: null,
+      sem5_sgpa: null,
+      sem6_sgpa: null,
+      sem7_sgpa: null,
+      sem8_sgpa: null,
+      experience_months: 0,
       resume_url: '',
       links: { github: '', linkedin: '', portfolio: '' },
     },
   });
 
   // Watch fields in real-time to compute progress
-  const watchedName = watch('name');
-  const watchedPhone = watch('phone');
-  const watchedRollNo = watch('roll_no');
-  const watchedBranch = watch('branch');
-  const watchedCgpa = watch('cgpa');
+  const watchedFirstName = watch('first_name');
+  const watchedLastName = watch('last_name');
+  const watchedDateOfBirth = watch('date_of_birth');
+  const watchedContactNumber = watch('contact_number');
+  const watchedPresentAddress = watch('present_address');
+  const watchedCourse = watch('course');
+  const watchedEnrollmentNumber = watch('enrollment_number');
+  const watchedTenthResult = watch('tenth_result');
+  const watchedTwelfthResult = watch('twelfth_result');
+  const watchedCgpa = watch('cgpa_previous_semester');
   const watchedResumeUrl = watch('resume_url');
   const watchedGithub = watch('links.github');
   const watchedLinkedin = watch('links.linkedin');
@@ -59,11 +78,30 @@ export default function ProfilePage() {
         const response = await api.get<any>('/students/me');
         if (response.success && response.data) {
           const p = response.data;
-          setValue('name', p.name || '');
-          setValue('phone', p.phone || '');
-          setValue('roll_no', p.roll_no || '');
-          setValue('branch', p.branch || '');
-          setValue('cgpa', p.cgpa);
+          setValue('first_name', p.first_name || '');
+          setValue('last_name', p.last_name || '');
+          if (p.date_of_birth) {
+            const dob = new Date(p.date_of_birth).toISOString().split('T')[0] ?? '';
+            setValue('date_of_birth', dob);
+          } else {
+            setValue('date_of_birth', '');
+          }
+          setValue('contact_number', p.contact_number || '');
+          setValue('present_address', p.present_address || '');
+          setValue('course', p.course || '');
+          setValue('enrollment_number', p.enrollment_number || '');
+          setValue('tenth_result', p.tenth_result);
+          setValue('twelfth_result', p.twelfth_result);
+          setValue('cgpa_previous_semester', p.cgpa_previous_semester);
+          setValue('sem1_sgpa', p.sem1_sgpa ?? null);
+          setValue('sem2_sgpa', p.sem2_sgpa ?? null);
+          setValue('sem3_sgpa', p.sem3_sgpa ?? null);
+          setValue('sem4_sgpa', p.sem4_sgpa ?? null);
+          setValue('sem5_sgpa', p.sem5_sgpa ?? null);
+          setValue('sem6_sgpa', p.sem6_sgpa ?? null);
+          setValue('sem7_sgpa', p.sem7_sgpa ?? null);
+          setValue('sem8_sgpa', p.sem8_sgpa ?? null);
+          setValue('experience_months', p.experience_months || 0);
           setValue('resume_url', p.resume_url || '');
           setValue('links.github', p.links?.github || '');
           setValue('links.linkedin', p.links?.linkedin || '');
@@ -83,13 +121,16 @@ export default function ProfilePage() {
   // Calculate completion percentage
   const calculateCompletion = () => {
     let score = 0;
-    if (watchedName) score += 15;
-    if (watchedPhone) score += 15;
-    if (watchedRollNo) score += 15;
-    if (watchedBranch) score += 15;
-    if (watchedCgpa !== undefined && watchedCgpa !== null && !isNaN(Number(watchedCgpa))) score += 15;
-    if (watchedResumeUrl) score += 15;
-    if (watchedGithub || watchedLinkedin || watchedPortfolio) score += 10;
+    if (watchedFirstName) score += 10;
+    if (watchedLastName) score += 10;
+    if (watchedDateOfBirth) score += 10;
+    if (watchedContactNumber) score += 10;
+    if (watchedPresentAddress) score += 10;
+    if (watchedCourse) score += 10;
+    if (watchedEnrollmentNumber) score += 10;
+    if (watchedTenthResult !== undefined && watchedTenthResult !== null && !isNaN(Number(watchedTenthResult))) score += 10;
+    if (watchedTwelfthResult !== undefined && watchedTwelfthResult !== null && !isNaN(Number(watchedTwelfthResult))) score += 10;
+    if (watchedCgpa !== undefined && watchedCgpa !== null && !isNaN(Number(watchedCgpa))) score += 10;
     return score;
   };
 
@@ -99,9 +140,11 @@ export default function ProfilePage() {
   const handleNext = async () => {
     let isValid = false;
     if (step === 1) {
-      isValid = await trigger(['name', 'phone']);
+      isValid = await trigger(['first_name', 'last_name', 'date_of_birth', 'contact_number', 'present_address']);
     } else if (step === 2) {
-      isValid = await trigger(['roll_no', 'branch', 'cgpa']);
+      isValid = await trigger(['course', 'enrollment_number', 'tenth_result', 'twelfth_result', 'cgpa_previous_semester']);
+    } else if (step === 3) {
+      isValid = await trigger(['sem1_sgpa', 'sem2_sgpa', 'sem3_sgpa', 'sem4_sgpa', 'sem5_sgpa', 'sem6_sgpa', 'sem7_sgpa', 'sem8_sgpa']);
     }
 
     if (isValid) {
@@ -205,7 +248,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Wizard Card */}
-        <RibbonCard title={`UPDATE DETAILS -- STEP ${step} OF 3`} variant="steel">
+        <RibbonCard title={`UPDATE DETAILS -- STEP ${step} OF 4`} variant="steel">
           {/* Messages */}
           {generalError && (
             <div className="border border-[#e91d2a] bg-[#e91d2a]/10 p-[12px] text-body-sm text-[#e91d2a] font-bold mb-[16px]">
@@ -219,6 +262,23 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {Object.keys(errors).length > 0 && (
+            <div className="border border-[#e91d2a] bg-[#e91d2a]/10 p-[12px] text-body-sm text-[#e91d2a] font-bold mb-[16px]">
+              Please check the following validation errors:
+              <ul className="list-disc list-inside mt-[4px] font-normal">
+                {Object.entries(errors).map(([key, err]) => {
+                  const label = key.replace(/_/g, ' ').replace('links.', 'Social Link: ').toUpperCase();
+                  const message = (err as any)?.message || 'Invalid value';
+                  return (
+                    <li key={key}>
+                      <span className="font-bold">{label}</span>: {message}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-[16px]">
             
             {/* Step 1: Personal Details */}
@@ -228,23 +288,55 @@ export default function ProfilePage() {
                   1. Personal Information
                 </h3>
                 
-                <TextInput
-                  label="Full Name"
-                  id="name"
-                  type="text"
-                  {...register('name')}
-                  disabled={isLoading}
-                  error={errors.name?.message}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <TextInput
+                    label="First Name"
+                    id="first_name"
+                    type="text"
+                    {...register('first_name')}
+                    disabled={isLoading}
+                    error={errors.first_name?.message}
+                  />
+
+                  <TextInput
+                    label="Last Name"
+                    id="last_name"
+                    type="text"
+                    {...register('last_name')}
+                    disabled={isLoading}
+                    error={errors.last_name?.message}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <TextInput
+                    label="Date of Birth"
+                    id="date_of_birth"
+                    type="date"
+                    {...register('date_of_birth')}
+                    disabled={isLoading}
+                    error={errors.date_of_birth?.message}
+                  />
+
+                  <TextInput
+                    label="Contact Number"
+                    id="contact_number"
+                    type="text"
+                    placeholder="9876543210"
+                    {...register('contact_number')}
+                    disabled={isLoading}
+                    error={errors.contact_number?.message}
+                  />
+                </div>
 
                 <TextInput
-                  label="Phone Number"
-                  id="phone"
+                  label="Present Address"
+                  id="present_address"
                   type="text"
-                  placeholder="+91XXXXXXXXXX"
-                  {...register('phone')}
+                  placeholder="123, Hostel 4, College Campus"
+                  {...register('present_address')}
                   disabled={isLoading}
-                  error={errors.phone?.message}
+                  error={errors.present_address?.message}
                 />
               </div>
             )}
@@ -257,48 +349,176 @@ export default function ProfilePage() {
                 </h3>
 
                 <TextInput
-                  label="Roll Number"
-                  id="roll_no"
+                  label="Course"
+                  id="course"
                   type="text"
-                  {...register('roll_no')}
+                  placeholder="e.g. B.Tech Computer Engineering"
+                  {...register('course')}
                   disabled={isLoading}
-                  error={errors.roll_no?.message}
+                  error={errors.course?.message}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                <TextInput
+                  label="Enrollment Number"
+                  id="enrollment_number"
+                  type="text"
+                  placeholder="e.g. 2026BCS001"
+                  {...register('enrollment_number')}
+                  disabled={isLoading}
+                  error={errors.enrollment_number?.message}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
                   <TextInput
-                    label="Branch / Specialization"
-                    id="branch"
-                    type="text"
-                    placeholder="e.g. Computer Science"
-                    {...register('branch')}
+                    label="10th Percentage"
+                    id="tenth_result"
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 92.50"
+                    {...register('tenth_result')}
                     disabled={isLoading}
-                    error={errors.branch?.message}
+                    error={errors.tenth_result?.message}
                   />
 
                   <TextInput
-                    label="CGPA"
-                    id="cgpa"
+                    label="12th Percentage"
+                    id="twelfth_result"
                     type="number"
                     step="0.01"
-                    placeholder="e.g. 9.20"
-                    {...register('cgpa')}
+                    placeholder="e.g. 88.20"
+                    {...register('twelfth_result')}
                     disabled={isLoading}
-                    error={errors.cgpa?.message}
+                    error={errors.twelfth_result?.message}
+                  />
+
+                  <TextInput
+                    label="CGPA (Prev Semester)"
+                    id="cgpa_previous_semester"
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 8.50"
+                    {...register('cgpa_previous_semester')}
+                    disabled={isLoading}
+                    error={errors.cgpa_previous_semester?.message}
                   />
                 </div>
               </div>
             )}
 
-            {/* Step 3: Resume & Links */}
+            {/* Step 3: Semester SGPA */}
             {step === 3 && (
               <div className="space-y-[16px]">
+                <h3 className="font-helvetica text-heading-3 uppercase border-b border-[#000000] pb-[4px] text-center">
+                  3. Semester-wise SGPA
+                </h3>
+                <p className="font-times-new-roman text-body-sm text-center text-gray-500">
+                  Leave blank if not yet completed.
+                </p>
+
+                <div className="grid grid-cols-2 gap-[16px]">
+                  <TextInput
+                    label="Semester 1 SGPA"
+                    id="sem1_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem1_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem1_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 2 SGPA"
+                    id="sem2_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem2_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem2_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 3 SGPA"
+                    id="sem3_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem3_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem3_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 4 SGPA"
+                    id="sem4_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem4_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem4_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 5 SGPA"
+                    id="sem5_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem5_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem5_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 6 SGPA"
+                    id="sem6_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem6_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem6_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 7 SGPA"
+                    id="sem7_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem7_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem7_sgpa?.message}
+                  />
+                  <TextInput
+                    label="Semester 8 SGPA"
+                    id="sem8_sgpa"
+                    type="number"
+                    step="0.01"
+                    placeholder="SGPA"
+                    {...register('sem8_sgpa')}
+                    disabled={isLoading}
+                    error={errors.sem8_sgpa?.message}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Resume & Links */}
+            {step === 4 && (
+              <div className="space-y-[16px]">
                 <h3 className="font-helvetica text-heading-3 uppercase border-b border-[#000000] pb-[4px]">
-                  3. Resume & Social Links
+                  4. Resume & Experience
                 </h3>
 
+                <TextInput
+                  label="Experience in months (if any)"
+                  id="experience_months"
+                  type="number"
+                  placeholder="0"
+                  {...register('experience_months')}
+                  disabled={isLoading}
+                  error={errors.experience_months?.message}
+                />
+
                 {/* PDF Resume Uploader */}
-                <div className="space-y-[8px]">
+                <div className="space-y-[8px] pt-[8px]">
                   <label className="block font-helvetica text-ui-label text-ink select-none font-bold">
                     Upload Resume
                   </label>
@@ -384,7 +604,7 @@ export default function ProfilePage() {
                 <div />
               )}
 
-              {step < 3 ? (
+              {step < 4 ? (
                 <ButtonPrimary type="button" onClick={handleNext} disabled={isLoading}>
                   NEXT STEP →
                 </ButtonPrimary>

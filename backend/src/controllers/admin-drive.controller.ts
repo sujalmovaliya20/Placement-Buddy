@@ -8,21 +8,47 @@ import { buildDriveMessage } from '../config/whatsappTemplates';
 import { env } from '../config/env';
 
 /**
+ * Helper to normalize Google Form URL to the public viewform format.
+ */
+export function normalizeGoogleFormUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const match = trimmed.match(/^(https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[a-zA-Z0-9_-]+)\/edit/);
+  if (match && match[1]) {
+    return `${match[1]}/viewform`;
+  }
+  return trimmed;
+}
+
+/**
  * Helper to fetch Google Form HTML and extract input field details using regex.
  */
 async function fetchGoogleFormFields(url: string): Promise<Array<{ entryId: string; label: string; type: string }>> {
   let html: string;
+  const normalizedUrl = normalizeGoogleFormUrl(url) || url;
+  let finalUrl = normalizedUrl;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(normalizedUrl, {
+      redirect: 'follow',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
+
+    finalUrl = res.url;
+
+    if (res.status === 401 || res.status === 403 || finalUrl.includes('accounts.google.com')) {
+      throw new AppError('Form requires Google authentication.', StatusCodes.BAD_REQUEST, 'NEEDS_FORMS_API');
+    }
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
     html = await res.text();
   } catch (err: any) {
+    if (err instanceof AppError && err.code === 'NEEDS_FORMS_API') {
+      throw err;
+    }
     throw new AppError(
       'Failed to fetch the Google Form. Please verify that the URL is public and correct.',
       StatusCodes.BAD_REQUEST,
@@ -34,20 +60,20 @@ async function fetchGoogleFormFields(url: string): Promise<Array<{ entryId: stri
   const formJsonString = match?.[1];
   if (!match || !formJsonString) {
     throw new AppError(
-      'Could not parse Google Form. Ensure the form is public and not restricted to your organization.',
+      'Could not parse Google Form. Falling back to Forms API.',
       StatusCodes.BAD_REQUEST,
-      'FORM_NOT_PUBLIC'
+      'NEEDS_FORMS_API'
     );
   }
 
   try {
     const rawData = JSON.parse(formJsonString.trim());
-    
+
     // Structure of FB_PUBLIC_LOAD_DATA_: rawData[1][1] contains form items
     if (!rawData || !Array.isArray(rawData) || rawData.length < 2 || !rawData[1]) {
       throw new AppError('Google Form structure is invalid or not public.', StatusCodes.BAD_REQUEST, 'INVALID_FORM_STRUCTURE');
     }
-    
+
     const items = rawData[1][1];
     if (!Array.isArray(items)) {
       return [];
@@ -57,7 +83,7 @@ async function fetchGoogleFormFields(url: string): Promise<Array<{ entryId: stri
 
     for (const item of items) {
       if (!Array.isArray(item) || item.length < 4) continue;
-      
+
       const label = item[1];
       const typeCode = item[3];
       const subQuestions = item[4];
@@ -65,7 +91,7 @@ async function fetchGoogleFormFields(url: string): Promise<Array<{ entryId: stri
       if (!subQuestions || !Array.isArray(subQuestions) || subQuestions.length === 0) continue;
       const subQuestion = subQuestions[0];
       if (!subQuestion || !Array.isArray(subQuestion) || subQuestion.length === 0) continue;
-      
+
       const entryIdNum = subQuestion[0];
       if (!entryIdNum) continue;
 
@@ -159,8 +185,20 @@ export const adminDriveController = {
 
   async parseGoogleForm(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
+    const { googleFormUrl } = req.body;
 
-    const drive = await DriveModel.findById(id);
+    const updatePayload: any = {};
+    if (googleFormUrl) {
+      updatePayload.google_form_url = normalizeGoogleFormUrl(googleFormUrl);
+    }
+
+    let drive;
+    if (Object.keys(updatePayload).length > 0) {
+      drive = await DriveModel.findByIdAndUpdate(id, { $set: updatePayload }, { new: true });
+    } else {
+      drive = await DriveModel.findById(id);
+    }
+
     if (!drive) {
       throw new AppError('Drive not found', StatusCodes.NOT_FOUND);
     }
@@ -173,21 +211,41 @@ export const adminDriveController = {
       );
     }
 
-    const fields = await fetchGoogleFormFields(drive.google_form_url);
+    let fields: Array<{ entryId: string; label: string; type: string }> = [];
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: fields,
-    });
+    try {
+      fields = await fetchGoogleFormFields(drive.google_form_url);
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: fields,
+      });
+    } catch (err: any) {
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          requires_manual_fill: true,
+          message: 'This form requires manual fill — students will see a copy-paste helper'
+        } as any
+      });
+    }
   },
+
 
   async updateMapping(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const mapping = req.body.field_mapping !== undefined ? req.body.field_mapping : req.body;
+    const { field_mapping, manual_field_mapping } = req.body;
+
+    const updatePayload: any = {};
+    if (field_mapping !== undefined) {
+      updatePayload.field_mapping = field_mapping;
+    }
+    if (manual_field_mapping !== undefined) {
+      updatePayload.manual_field_mapping = manual_field_mapping;
+    }
 
     const drive = await DriveModel.findByIdAndUpdate(
       id,
-      { $set: { field_mapping: mapping } },
+      { $set: updatePayload },
       { new: true, runValidators: true }
     );
 
@@ -231,12 +289,12 @@ export const adminDriveController = {
     res.setHeader('Content-Disposition', `attachment; filename=applications_${drive.company_name.replace(/\s+/g, '_')}_${id}.csv`);
 
     // Standard headers
-    const standardHeaders = ['Roll No', 'Name', 'Branch', 'CGPA', 'Phone', 'Email', 'Status', 'Applied At'];
-    
+    const standardHeaders = ['Enrollment No', 'First Name', 'Last Name', 'Course', 'CGPA (Prev Sem)', 'Contact Number', 'Email', 'Status', 'Applied At'];
+
     // Custom fields headers
     const customFields = drive.custom_fields || [];
     const customHeaders = customFields.map(cf => cf.label);
-    
+
     const headers = [...standardHeaders, ...customHeaders];
     res.write(headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n');
 
@@ -247,13 +305,14 @@ export const adminDriveController = {
 
     for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
       const student = doc.student_id as any;
-      
+
       const standardValues = [
-        student?.roll_no ?? '',
-        student?.name ?? '',
-        student?.branch ?? '',
-        student?.cgpa ?? '',
-        student?.phone ?? '',
+        student?.enrollment_number ?? '',
+        student?.first_name ?? '',
+        student?.last_name ?? '',
+        student?.course ?? '',
+        student?.cgpa_previous_semester ?? '',
+        student?.contact_number ?? '',
         student?.email ?? '',
         doc.status,
         doc.applied_at ? new Date(doc.applied_at).toISOString() : '',

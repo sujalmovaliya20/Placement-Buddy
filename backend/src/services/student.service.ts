@@ -31,9 +31,10 @@ export const studentService = {
     if (search) {
       const regex = { $regex: search, $options: 'i' };
       filter.$or = [
-        { name: regex },
+        { first_name: regex },
+        { last_name: regex },
         { email: regex },
-        { roll_no: regex },
+        { enrollment_number: regex },
       ];
     }
 
@@ -84,13 +85,13 @@ export const studentService = {
       );
     }
 
-    // Check for duplicate roll number
-    const existingRoll = await StudentModel.findOne({ roll_no: payload.roll_no });
-    if (existingRoll) {
+    // Check for duplicate enrollment number
+    const existingEnrollment = await StudentModel.findOne({ enrollment_number: payload.enrollment_number });
+    if (existingEnrollment) {
       throw new AppError(
-        `A student with roll number "${payload.roll_no}" already exists`,
+        `A student with enrollment number "${payload.enrollment_number}" already exists`,
         StatusCodes.CONFLICT,
-        'DUPLICATE_ROLL_NO',
+        'DUPLICATE_ENROLLMENT_NO',
       );
     }
 
@@ -125,14 +126,14 @@ export const studentService = {
       }
     }
 
-    // Check roll number uniqueness if roll number is being changed
-    if (payload.roll_no && payload.roll_no !== existing.roll_no) {
-      const rollTaken = await StudentModel.findOne({ roll_no: payload.roll_no, _id: { $ne: id } });
-      if (rollTaken) {
+    // Check enrollment number uniqueness if enrollment number is being changed
+    if (payload.enrollment_number && payload.enrollment_number !== existing.enrollment_number) {
+      const enrollmentTaken = await StudentModel.findOne({ enrollment_number: payload.enrollment_number, _id: { $ne: id } });
+      if (enrollmentTaken) {
         throw new AppError(
-          `A student with roll number "${payload.roll_no}" already exists`,
+          `A student with enrollment number "${payload.enrollment_number}" already exists`,
           StatusCodes.CONFLICT,
-          'DUPLICATE_ROLL_NO',
+          'DUPLICATE_ENROLLMENT_NO',
         );
       }
     }
