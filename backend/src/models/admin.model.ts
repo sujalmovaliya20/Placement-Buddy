@@ -6,6 +6,9 @@ export interface IAdmin extends Document {
   email: string;
   password?: string;
   role: 'tpo' | 'superadmin';
+  google_refresh_token?: string;
+  google_connected: boolean;
+  google_token_expiry?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +40,19 @@ const adminSchema = new Schema<IAdmin>(
         message: '{VALUE} is not a valid admin role',
       },
       required: [true, 'Admin role is required'],
+    },
+    google_refresh_token: {
+      type: String,
+      select: false,
+      default: null,
+    },
+    google_connected: {
+      type: Boolean,
+      default: false,
+    },
+    google_token_expiry: {
+      type: Date,
+      default: null,
     },
   },
   {

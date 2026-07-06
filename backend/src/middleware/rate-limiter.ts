@@ -32,4 +32,19 @@ export const loginRateLimiter = rateLimit({
   statusCode: StatusCodes.TOO_MANY_REQUESTS,
 });
 
+export const oauthCallbackRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: env.NODE_ENV === 'development' ? 100 : 10, // Limit each IP to 10 OAuth callback requests per window
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many auth callback attempts from this IP, please try again after 15 minutes',
+    },
+  },
+  statusCode: StatusCodes.TOO_MANY_REQUESTS,
+});
+
 

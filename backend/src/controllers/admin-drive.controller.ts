@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { DriveModel, ApplicationModel, NotificationLogModel } from '../models';
 import { AppError } from '../middleware/error-handler';
+import { googleAuthService } from '../services/googleAuth.service';
 import { logger } from '../utils/logger';
 import { whatsappService } from '../services/whatsapp.service';
 import { buildDriveMessage } from '../config/whatsappTemplates';
@@ -211,29 +212,255 @@ export const adminDriveController = {
       );
     }
 
-    let fields: Array<{ entryId: string; label: string; type: string }> = [];
-
     try {
-      fields = await fetchGoogleFormFields(drive.google_form_url);
+      const fields = await fetchGoogleFormFields(drive.google_form_url);
       res.status(StatusCodes.OK).json({
         success: true,
         data: fields,
       });
     } catch (err: any) {
+      // Scrape failed (login-redirect detected or parse error).
+      // Do NOT fall back to Forms API — that path uses internal itemIds, not prefill entry.* IDs.
+      // Signal the frontend to switch to the editor-link + reference-link flow.
+      logger.info(
+        { driveId: id, errCode: err?.code },
+        'Google Form public scrape failed — instructing admin to use editor-link flow'
+      );
       res.status(StatusCodes.OK).json({
-        success: true,
-        data: {
-          requires_manual_fill: true,
-          message: 'This form requires manual fill — students will see a copy-paste helper'
-        } as any
+        success: false,
+        error: {
+          code: 'NEEDS_PREFILL_REFERENCE_LINK',
+          message:
+            'This form is restricted or login-protected. Provide the editor link so we can fetch the question list via Google Forms API.',
+        },
       });
     }
+  },
+
+  /**
+   * POST /api/admin/drives/:id/parse-form-structure
+   * Accepts an editor URL, extracts the formId, calls the Google Forms API
+   * using the admin's connected Google account, and returns the question list
+   * (title + itemId hex + type) — for display purposes only.
+   * Does NOT return prefill entry.* IDs (those come from the reference-link flow).
+   */
+  async parseFormStructure(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { editor_url } = req.body as { editor_url?: string };
+
+    if (!editor_url || !editor_url.trim()) {
+      throw new AppError('editor_url is required', StatusCodes.BAD_REQUEST, 'MISSING_EDITOR_URL');
+    }
+
+    const drive = await DriveModel.findById(id);
+    if (!drive) {
+      throw new AppError('Drive not found', StatusCodes.NOT_FOUND);
+    }
+
+    const adminId = req.user?.id;
+    if (!adminId) {
+      throw new AppError('Unauthorized', StatusCodes.UNAUTHORIZED);
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = await googleAuthService.getValidAccessToken(adminId);
+    } catch (err: any) {
+      // GoogleNotConnectedError — surface as a structured response so UI can prompt connection
+      if (err?.code === 'GOOGLE_NOT_CONNECTED') {
+        res.status(StatusCodes.OK).json({
+          success: false,
+          error: {
+            code: 'GOOGLE_NOT_CONNECTED',
+            message: 'Your Google account is not connected. Connect it in Settings to use this feature.',
+          },
+        });
+        return;
+      }
+      throw err;
+    }
+
+    const structure = await googleAuthService.fetchFormStructureViaApi(editor_url, accessToken);
+
+    // Save editor_url to the drive document
+    drive.google_form_editor_url = editor_url;
+    await drive.save();
+
+    logger.info({ adminId, driveId: id, questionCount: structure.length }, 'Fetched form structure via Google Forms API and saved editor_url');
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: structure,
+    });
+  },
+
+  /**
+   * POST /api/admin/drives/:id/parse-prefill-reference
+   *
+   * Accepts a Google Form pre-filled reference link (from TPO: Preview → Get pre-filled link).
+   * Parses entry.XXXXXXX=value params in order, fetches form structure via Forms API,
+   * filters to question-only items (CRITICAL — excludes textItem/imageItem/videoItem/pageBreakItem),
+   * zips them 1:1 by position, validates count match, and returns [{entryId, label, itemId}]
+   * in the same shape the frontend FormField mapping UI already expects.
+   */
+  async parsePrefillReference(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { prefill_url } = req.body as { prefill_url?: string };
+
+    if (!prefill_url || !prefill_url.trim()) {
+      throw new AppError('prefill_url is required', StatusCodes.BAD_REQUEST, 'MISSING_PREFILL_URL');
+    }
+
+    const trimmedUrl = prefill_url.trim();
+    if (!trimmedUrl.startsWith('https://docs.google.com/forms/')) {
+      throw new AppError(
+        'Invalid prefill URL — must be a Google Forms URL (https://docs.google.com/forms/...)',
+        StatusCodes.BAD_REQUEST,
+        'INVALID_PREFILL_URL'
+      );
+    }
+
+    const drive = await DriveModel.findById(id);
+    if (!drive) {
+      throw new AppError('Drive not found', StatusCodes.NOT_FOUND);
+    }
+
+    const adminId = req.user?.id;
+    if (!adminId) {
+      throw new AppError('Unauthorized', StatusCodes.UNAUTHORIZED);
+    }
+
+    // 1. Extract entry.* params in order (URLSearchParams preserves insertion order), deduplicating them
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(trimmedUrl);
+    } catch {
+      throw new AppError('prefill_url is not a valid URL', StatusCodes.BAD_REQUEST, 'INVALID_PREFILL_URL');
+    }
+
+    const entryIds: string[] = [];
+    parsedUrl.searchParams.forEach((_, key) => {
+      if (key.startsWith('entry.')) {
+        if (!entryIds.includes(key)) {
+          entryIds.push(key);
+        }
+      }
+    });
+
+    if (entryIds.length === 0) {
+      throw new AppError(
+        'No entry.* parameters found in the prefill URL. Make sure you copy the URL from Google Forms → Preview → Get pre-filled link.',
+        StatusCodes.BAD_REQUEST,
+        'NO_ENTRY_PARAMS'
+      );
+    }
+
+    // 2. Extract formId from stored google_form_editor_url on the Drive document
+    let formId = '';
+    if (drive.google_form_editor_url) {
+      const match = drive.google_form_editor_url.trim().match(/\/forms\/d\/([a-zA-Z0-9_-]+)\/edit/);
+      if (match && match[1]) {
+        formId = match[1];
+      }
+    }
+
+    if (!formId && drive.google_form_url) {
+      const match = drive.google_form_url.trim().match(/\/forms\/d\/([a-zA-Z0-9_-]+)\/edit/);
+      if (match && match[1]) {
+        formId = match[1];
+      }
+    }
+
+    if (!formId) {
+      throw new AppError(
+        'Form ID not found. Please verify the Editor Link in the previous step first.',
+        StatusCodes.BAD_REQUEST,
+        'MISSING_EDITOR_URL'
+      );
+    }
+
+    // 3. Get valid access token
+    let accessToken: string;
+    try {
+      accessToken = await googleAuthService.getValidAccessToken(adminId);
+    } catch (err: any) {
+      if (err?.code === 'GOOGLE_NOT_CONNECTED') {
+        res.status(StatusCodes.OK).json({
+          success: false,
+          error: {
+            code: 'GOOGLE_NOT_CONNECTED',
+            message: 'Your Google account is not connected. Connect it in Settings to use this feature.',
+          },
+        });
+        return;
+      }
+      throw err;
+    }
+
+    // 4. Fetch form items — filtered to question-only (CRITICAL)
+    const { questionItems, skippedItems } = await googleAuthService.fetchFormItemsFiltered(formId, accessToken);
+
+    if (skippedItems.length > 0) {
+      logger.info(
+        { driveId: id, skipped: skippedItems },
+        'parse-prefill-reference: skipped non-question items'
+      );
+    }
+
+    // 5. Validate count match
+    if (questionItems.length !== entryIds.length) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: {
+          code: 'COUNT_MISMATCH',
+          message: `Question count (${questionItems.length}) does not match entry parameter count (${entryIds.length}). Form may have changed since reference link was generated, please regenerate.`,
+        },
+      });
+      return;
+    }
+
+    // 6. Zip questions against entry IDs by position
+    const mapped = questionItems.map((q, i) => ({
+      entryId: entryIds[i]!,
+      label: q.title,
+      itemId: q.questionIdHex,
+      type: q.type,
+    }));
+
+    logger.info(
+      { adminId, driveId: id, mappedCount: mapped.length, skippedCount: skippedItems.length },
+      'parse-prefill-reference: mapping generated successfully'
+    );
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: mapped,
+      skipped: skippedItems,
+    });
   },
 
 
   async updateMapping(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { field_mapping, manual_field_mapping } = req.body;
+
+    if (field_mapping !== undefined && field_mapping !== null) {
+      const invalidKeys: string[] = [];
+      for (const [key, val] of Object.entries(field_mapping)) {
+        const keyMatch = /^entry\.\d+$/.test(key);
+        const valMatch = typeof val === 'string' && /^entry\.\d+$/.test(val);
+        if (!keyMatch && !valMatch) {
+          invalidKeys.push(key);
+        }
+      }
+      if (invalidKeys.length > 0) {
+        throw new AppError(
+          `Invalid field_mapping keys: ${invalidKeys.join(', ')}. All keys must match entry.\\d+`,
+          StatusCodes.BAD_REQUEST,
+          'INVALID_ENTRY_KEY'
+        );
+      }
+    }
 
     const updatePayload: any = {};
     if (field_mapping !== undefined) {

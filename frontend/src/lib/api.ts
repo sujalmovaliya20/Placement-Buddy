@@ -116,7 +116,7 @@ export const api = {
     return request<ApiResponse<T>>(path, { method: 'PATCH', body });
   },
 
-  delete(path: string): Promise<void> {
-    return request<void>(path, { method: 'DELETE' });
+  delete<T = void>(path: string): Promise<T extends void ? void : ApiResponse<T>> {
+    return request<T extends void ? void : ApiResponse<T>>(path, { method: 'DELETE' });
   },
 };

@@ -18,6 +18,7 @@ export interface IDrive extends Document {
   deadline: Date;
   source_type: 'native' | 'google_form';
   google_form_url: string | null;
+  google_form_editor_url?: string | null;
   field_mapping: Record<string, string> | null;
   manual_field_mapping: IManualFieldMapping[] | null;
   custom_fields: ICustomField[];
@@ -73,6 +74,10 @@ const driveSchema = new Schema<IDrive>(
         },
         message: 'google_form_url is required when source_type is "google_form"',
       },
+    },
+    google_form_editor_url: {
+      type: String,
+      default: null,
     },
     field_mapping: {
       type: Schema.Types.Mixed,

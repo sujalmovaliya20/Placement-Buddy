@@ -30,6 +30,10 @@ const envSchema = z.object({
   OPENWA_API_URL: z.string().default('http://localhost:2785'),
   OPENWA_API_KEY: z.string().optional().default(''),
   OPENWA_SESSION_ID: z.string().default('placement-buddy'),
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GOOGLE_REDIRECT_URI: z.string().default(''),
+  GOOGLE_TOKEN_ENCRYPTION_KEY: z.string().default(''),
 });
 
 type Env = z.infer<typeof envSchema>;

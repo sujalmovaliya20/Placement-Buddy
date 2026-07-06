@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
+import type { ApiErrorResponse, ApiResponse } from '@shared/types/api';
 import { useToast } from '@/lib/toast-context';
 import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
 
@@ -50,6 +51,7 @@ export default function AdminNewDrivePage() {
 
   // Step 2 Form States (Google Form)
   const [googleFormUrl, setGoogleFormUrl] = useState('');
+  const [editorUrl, setEditorUrl] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parsedFields, setParsedFields] = useState<FormField[]>([]);
   const [fieldMappings, setFieldMappings] = useState<Record<string, string>>({});
@@ -61,6 +63,16 @@ export default function AdminNewDrivePage() {
     { form_label: '', profile_field: '' }
   ]);
 
+  // Restricted form flow — set when parse-google-form returns NEEDS_PREFILL_REFERENCE_LINK
+  const [needsPrefillReferenceLink, setNeedsPrefillReferenceLink] = useState(false);
+  // Structure fetched via editor link (display-only question list from Forms API)
+  interface FormStructureItem { title: string; itemId: string; type: string; }
+  const [formStructure, setFormStructure] = useState<FormStructureItem[]>([]);
+  const [isParsingStructure, setIsParsingStructure] = useState(false);
+
+  // Prefill reference link — used to zip entry.* IDs against the structure
+  const [prefillReferenceLink, setPrefillReferenceLink] = useState('');
+  const [isParsingPrefill, setIsParsingPrefill] = useState(false);
 
   // Verify Admin Access
   useEffect(() => {
@@ -261,6 +273,8 @@ export default function AdminNewDrivePage() {
 
     setIsParsing(true);
     setMappingSaved(false);
+    setNeedsPrefillReferenceLink(false);
+    setFormStructure([]);
 
     try {
       // 1. Update the database URL first using PATCH /drives/:id
@@ -268,26 +282,122 @@ export default function AdminNewDrivePage() {
         google_form_url: urlStr,
       });
 
-      // 2. Parse form
+      // 2. Parse form — backend returns success:false with a code when the form is restricted.
       const res = await api.post<any>(`/admin/drives/${createdDriveId}/parse-google-form`, {
         googleFormUrl: urlStr,
-      });
-      if (res.success && res.data) {
-        if (res.data.requires_manual_fill) {
-          setRequiresManualFill(true);
-          setManualFields([{ form_label: '', profile_field: '' }]);
+      }) as ApiErrorResponse | Awaited<ReturnType<typeof api.post<any>>>;
+
+      if (!res.success) {
+        // Structured failure — check the error code
+        const errorCode = res.error?.code;
+        if (errorCode === 'NEEDS_PREFILL_REFERENCE_LINK') {
+          setNeedsPrefillReferenceLink(true);
           setParsedFields([]);
-          toastSuccess('This restricted form requires manual mapping setup.');
-        } else {
           setRequiresManualFill(false);
-          setParsedFields(res.data);
-          toastSuccess('Successfully parsed input fields from Google Form.');
+          toastError('This form is restricted. Use the Editor Link to fetch its question structure.');
+        } else {
+          toastError(res.error?.message || 'Failed to parse Google Form.');
         }
+        return;
+      }
+
+      if (res.data) {
+        setRequiresManualFill(false);
+        setNeedsPrefillReferenceLink(false);
+        setParsedFields(res.data);
+        toastSuccess('Successfully parsed input fields from Google Form.');
       }
     } catch (err: any) {
       toastError(err.message || 'Failed to parse Google Form. Ensure form is public.');
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  // Step 2: Parse form structure via editor link (Forms API — display only, no entry.* IDs)
+  const handleParseFormStructure = async () => {
+    if (!createdDriveId) return;
+    const editorUrlStr = editorUrl.trim();
+    if (!editorUrlStr) {
+      toastError('Please enter the Editor Link (edit URL) for the Google Form.');
+      return;
+    }
+    if (!editorUrlStr.includes('/edit')) {
+      toastError('The Editor Link should end with .../edit — copy it directly from the Google Forms editor.');
+      return;
+    }
+
+    setIsParsingStructure(true);
+    setFormStructure([]);
+
+    try {
+      const res = await api.post<any>(`/admin/drives/${createdDriveId}/parse-form-structure`, {
+        editor_url: editorUrlStr,
+      });
+
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setFormStructure(res.data);
+        toastSuccess(`Fetched ${res.data.length} question(s) from the form. You can now set up field mapping.`);
+      } else {
+        toastError('No questions found in this form via the Forms API.');
+      }
+    } catch (err: any) {
+      if (err?.code === 'GOOGLE_NOT_CONNECTED') {
+        toastError('Google account not connected. Go to Settings → Connect Google Account first.');
+      } else {
+        toastError(err?.message || 'Failed to fetch form structure via editor link.');
+      }
+    } finally {
+      setIsParsingStructure(false);
+    }
+  };
+
+  // Step 2B: Parse prefill reference link → extract entry.* IDs → auto-populate parsedFields
+  const handleParsePrefillReference = async () => {
+    if (!createdDriveId) return;
+    const urlStr = prefillReferenceLink.trim();
+    if (!urlStr) {
+      toastError('Please paste the pre-filled reference link first.');
+      return;
+    }
+    if (!urlStr.startsWith('https://docs.google.com/forms/')) {
+      toastError('The pre-filled link must be a Google Forms URL.');
+      return;
+    }
+
+    setIsParsingPrefill(true);
+    try {
+      const res = await api.post<FormField[]>(
+        `/admin/drives/${createdDriveId}/parse-prefill-reference`,
+        { prefill_url: urlStr }
+      ) as ApiResponse<FormField[]> & { skipped?: string[] };
+
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        // Populate the standard field mapping table — same shape as parsedFields
+        setParsedFields(res.data);
+        setRequiresManualFill(false);
+        const skipped: string[] = res.skipped || [];
+        if (skipped.length > 0) {
+          toastSuccess(
+            `Mapped ${res.data.length} field(s). Skipped ${skipped.length} non-question item(s) — see backend logs.`
+          );
+        } else {
+          toastSuccess(`Successfully mapped ${res.data.length} field(s) from the pre-filled reference link.`);
+        }
+      } else {
+        toastError('No fields were returned — ensure the reference link has all questions pre-filled.');
+      }
+    } catch (err: any) {
+      const code = err?.code;
+      if (code === 'GOOGLE_NOT_CONNECTED') {
+        toastError('Google account not connected. Go to Settings → Connect Google Account first.');
+      } else if (code === 'COUNT_MISMATCH') {
+        toastError(err?.message || 'Count mismatch — please regenerate the reference link.');
+      } else {
+        toastError(err?.message || 'Failed to parse pre-filled reference link.');
+      }
+    } finally {
+      setIsParsingPrefill(false);
     }
   };
 
@@ -302,7 +412,9 @@ export default function AdminNewDrivePage() {
   const handleManualRowChange = (index: number, key: 'form_label' | 'profile_field', value: string) => {
     setManualFields((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], [key]: value };
+      const current = next[index];
+      if (!current) return prev;
+      next[index] = { ...current, [key]: value };
       return next;
     });
   };
@@ -606,6 +718,13 @@ export default function AdminNewDrivePage() {
                     disabled={isParsing}
                   />
 
+                  <TextInput
+                    label="Editor Link (for private/restricted forms only)"
+                    placeholder="https://docs.google.com/forms/d/FORM_ID/edit"
+                    value={editorUrl}
+                    onChange={(e) => setEditorUrl(e.target.value)}
+                    disabled={isParsing || isParsingStructure}
+                  />
                 </div>
 
                 <div className="flex justify-end pt-[4px]">
@@ -613,10 +732,110 @@ export default function AdminNewDrivePage() {
                     onClick={() => handleParseGoogleForm(googleFormUrl)}
                     disabled={isParsing}
                   >
-                    PARSE GOOGLE FORM
+                    {isParsing ? 'PARSING...' : 'PARSE GOOGLE FORM'}
                   </ButtonPrimary>
                 </div>
               </div>
+
+              {/* Restricted form banner — shown when parse-google-form returns NEEDS_PREFILL_REFERENCE_LINK */}
+              {!isParsing && needsPrefillReferenceLink && (
+                <div className="border border-[#000000] p-[16px] bg-[#fffbea] space-y-[12px]">
+                  <div className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
+                    ⚠ Restricted Form — Editor Link Required
+                  </div>
+                  <p className="font-times-new-roman text-body-sm">
+                    This form is login-protected or restricted — it cannot be scraped from the public URL.
+                    Paste the <strong>Editor Link</strong> above (from Google Forms → Share → Copy link → Editor link),
+                    then click the button below to fetch the question list via the Google Forms API.
+                  </p>
+                  {formStructure.length === 0 && (
+                    <div className="flex justify-end">
+                      <ButtonPrimary
+                        onClick={handleParseFormStructure}
+                        disabled={isParsingStructure}
+                      >
+                        {isParsingStructure ? 'FETCHING STRUCTURE...' : 'FETCH QUESTION LIST VIA EDITOR LINK'}
+                      </ButtonPrimary>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Form Structure Panel — question list fetched via Forms API (display only) */}
+              {!isParsingStructure && formStructure.length > 0 && (
+                <div className="space-y-[12px]">
+                  <div className="font-helvetica text-heading-3 uppercase font-bold">
+                    Form Question Structure (via Google Forms API)
+                  </div>
+                  <p className="font-times-new-roman text-body-sm">
+                    Below are the questions in this form. These are fetched via the Forms API and shown for reference.
+                    Use the <strong>Manual Field Mapping</strong> table below to map your student profile fields to form labels.
+                  </p>
+                  <div className="border border-[#000000] overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#ffffff]">
+                          <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold border-r border-[#000000] select-none">#</th>
+                          <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold border-r border-[#000000] select-none">Question Title</th>
+                          <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none">Type</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formStructure.map((q, idx) => (
+                          <tr key={q.itemId || idx} className="border-b border-[#000000] last:border-b-0">
+                            <td className="border-r border-[#000000] px-[12px] py-[8px] font-mono text-body-sm text-gray-500">{idx + 1}</td>
+                            <td className="border-r border-[#000000] px-[12px] py-[8px] font-times-new-roman text-body-sm font-bold">{q.title}</td>
+                            <td className="px-[12px] py-[8px] font-mono text-body-sm text-gray-500 uppercase">{q.type}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* After viewing the structure, show the manual mapping table */}
+                  <div className="border border-[#000000] p-[12px] bg-[#f0f4ff] font-times-new-roman text-body-sm">
+                    Now paste the <strong>Pre-filled Reference Link</strong> below — from Google Forms:{' '}
+                    <strong>Preview → Fill out the form → Get pre-filled link</strong>. This lets us extract
+                    the <code>entry.*</code> IDs for each question and auto-generate your field mapping.
+                  </div>
+
+                  {/* Step 2B: Prefill reference link input */}
+                  <div className="border border-[#000000] p-[16px] bg-[#ffffff] space-y-[12px]">
+                    <div className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
+                      STEP 2B — PASTE PRE-FILLED REFERENCE LINK
+                    </div>
+                    <p className="font-times-new-roman text-body-sm">
+                      In Google Forms: open the form → top-right menu (<strong>⋮</strong>) →{' '}
+                      <strong>Get pre-filled link</strong> → fill in any value for every question → click{' '}
+                      <strong>Get Link</strong> → copy the URL and paste it here.
+                    </p>
+                    <TextInput
+                      label="Pre-filled Reference Link"
+                      placeholder="https://docs.google.com/forms/d/e/.../viewform?usp=pp_url&entry.12345=..."
+                      value={prefillReferenceLink}
+                      onChange={(e) => setPrefillReferenceLink(e.target.value)}
+                      disabled={isParsingPrefill}
+                    />
+                    <div className="flex justify-end gap-[12px]">
+                      <ButtonSecondary
+                        type="button"
+                        onClick={() => {
+                          setRequiresManualFill(true);
+                          setManualFields([{ form_label: '', profile_field: '' }]);
+                        }}
+                        disabled={isParsingPrefill}
+                      >
+                        SKIP — USE MANUAL MAPPING INSTEAD
+                      </ButtonSecondary>
+                      <ButtonPrimary
+                        onClick={handleParsePrefillReference}
+                        disabled={isParsingPrefill || !prefillReferenceLink.trim()}
+                      >
+                        {isParsingPrefill ? 'EXTRACTING ENTRY IDs...' : 'EXTRACT & AUTO-MAP FIELDS'}
+                      </ButtonPrimary>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Loading State */}
               {isParsing && (
