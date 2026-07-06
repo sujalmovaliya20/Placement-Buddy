@@ -5,6 +5,15 @@ import { asyncHandler } from '../utils/async-handler';
 import { authenticate } from '../middleware/auth.middleware';
 import { isAdmin } from '../middleware/authorize.middleware';
 import { oauthCallbackRateLimiter } from '../middleware/rate-limiter';
+import { validate } from '../middleware/validate';
+import {
+  createDriveSchema,
+  listQuerySchema,
+  parseGoogleFormSchema,
+  parseFormStructureSchema,
+  parsePrefillReferenceSchema,
+  updateMappingSchema,
+} from '@shared/index';
 
 const router = Router();
 
@@ -19,12 +28,12 @@ router.get('/google-auth/connect', asyncHandler(googleAuthController.connect));
 router.delete('/google-auth/disconnect', asyncHandler(googleAuthController.disconnect));
 
 // Drives management
-router.post('/drives', asyncHandler(adminDriveController.create));
-router.get('/drives', asyncHandler(adminDriveController.list));
-router.post('/drives/:id/parse-google-form', asyncHandler(adminDriveController.parseGoogleForm));
-router.post('/drives/:id/parse-form-structure', asyncHandler(adminDriveController.parseFormStructure));
-router.post('/drives/:id/parse-prefill-reference', asyncHandler(adminDriveController.parsePrefillReference));
-router.put('/drives/:id/mapping', asyncHandler(adminDriveController.updateMapping));
+router.post('/drives', validate({ body: createDriveSchema }), asyncHandler(adminDriveController.create));
+router.get('/drives', validate({ query: listQuerySchema }), asyncHandler(adminDriveController.list));
+router.post('/drives/:id/parse-google-form', validate({ body: parseGoogleFormSchema }), asyncHandler(adminDriveController.parseGoogleForm));
+router.post('/drives/:id/parse-form-structure', validate({ body: parseFormStructureSchema }), asyncHandler(adminDriveController.parseFormStructure));
+router.post('/drives/:id/parse-prefill-reference', validate({ body: parsePrefillReferenceSchema }), asyncHandler(adminDriveController.parsePrefillReference));
+router.put('/drives/:id/mapping', validate({ body: updateMappingSchema }), asyncHandler(adminDriveController.updateMapping));
 router.get('/drives/:id/applications', asyncHandler(adminDriveController.getApplications));
 router.get('/drives/:id/export', asyncHandler(adminDriveController.exportApplicationsCsv));
 router.post('/drives/:id/notify', asyncHandler(adminDriveController.notify));

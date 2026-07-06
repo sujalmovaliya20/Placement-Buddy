@@ -10,6 +10,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
+import compression from 'compression';
 import { env } from './config/env';
 import { API_PREFIX } from './config/constants';
 import { apiRouter } from './routes';
@@ -26,17 +27,50 @@ export function createApp(): express.Application {
   app.set('trust proxy', 1);
 
   // ── Security ──────────────────────────────────────────────
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          sandbox: ['allow-forms', 'allow-scripts'],
+        },
+      },
+      hidePoweredBy: true,
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      noSniff: true,
+      frameguard: {
+        action: 'deny',
+      },
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+    }),
+  );
   app.use(
     cors({
       origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, postman)
         if (!origin) {
           callback(null, true);
           return;
         }
-        const allowedOrigins = [env.CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
-        const isAllowed = allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-        callback(null, isAllowed);
+
+        if (env.NODE_ENV === 'production') {
+          // Strict in production: only allow the exact configured production frontend URL
+          if (origin === env.FRONTEND_URL) {
+            callback(null, true);
+          } else {
+            callback(new Error('Not allowed by CORS in production'));
+          }
+        } else {
+          // Dev/Test mode: allow the configured FRONTEND_URL, local developer instances, or any localhost port
+          const allowedOrigins = [env.FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'];
+          const isAllowed = allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+          callback(null, isAllowed);
+        }
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
@@ -46,6 +80,9 @@ export function createApp(): express.Application {
 
   // ── Rate Limiting ─────────────────────────────────────────
   app.use(apiRateLimiter);
+
+  // ── Response Compression ──────────────────────────────────
+  app.use(compression());
 
   // ── Body & Cookie parsing ─────────────────────────────────
   app.use(cookieParser());
@@ -97,6 +134,16 @@ export function createApp(): express.Application {
       success: true,
       connected,
     });
+  });
+
+  // ── Security.txt ──────────────────────────────────────────
+  app.get('/.well-known/security.txt', (_req, res) => {
+    res.type('text/plain').send(
+      `Contact: mailto:security@${env.COLLEGE_EMAIL_DOMAIN}\nExpires: 2027-07-06T12:00:00.000Z\nPreferred-Languages: en\n`
+    );
+  });
+  app.get('/security.txt', (_req, res) => {
+    res.redirect('/.well-known/security.txt');
   });
 
   // ── API routes ────────────────────────────────────────────

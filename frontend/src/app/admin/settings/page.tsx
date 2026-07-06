@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard } from '@/components/ui';
+
+interface AdminAuthResponse {
+  role: string;
+  profile?: {
+    google_connected?: boolean;
+    google_token_expiry?: string | null;
+  };
+}
 
 function SettingsContent() {
   const router = useRouter();
@@ -19,9 +27,9 @@ function SettingsContent() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 1. Authenticate Admin and Fetch Connection Status
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
-      const authRes = await api.get<any>('/auth/me');
+      const authRes = await api.get<AdminAuthResponse>('/auth/me');
       if (!authRes.success || (authRes.data.role !== 'tpo' && authRes.data.role !== 'superadmin')) {
         toastError('Unauthorized: Access restricted to TPO administrators.');
         router.push('/login');
@@ -32,17 +40,17 @@ function SettingsContent() {
       const profile = authRes.data.profile;
       setGoogleConnected(!!profile?.google_connected);
       setTokenExpiry(profile?.google_token_expiry || null);
-    } catch (err: any) {
-      toastError(err.message || 'Failed to authenticate admin session.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to authenticate admin session.');
       router.push('/login');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router, toastError]);
 
   useEffect(() => {
     fetchStatus();
-  }, [router]);
+  }, [fetchStatus]);
 
   // 2. Check for redirect query parameters (success or error messages from Google OAuth Callback)
   useEffect(() => {
@@ -58,7 +66,7 @@ function SettingsContent() {
       toastError(`Authentication failed: ${decodeURIComponent(error)}`);
       router.replace('/admin/settings');
     }
-  }, [searchParams]);
+  }, [searchParams, fetchStatus, router, toastError, toastSuccess]);
 
   // 3. Initiate Connection Flow
   const handleConnect = async () => {
@@ -73,8 +81,8 @@ function SettingsContent() {
         toastError('Failed to generate Google connection URL.');
         setIsProcessing(false);
       }
-    } catch (err: any) {
-      toastError(err.message || 'An error occurred during Google connection.');
+    } catch (err) {
+      toastError((err as Error).message || 'An error occurred during Google connection.');
       setIsProcessing(false);
     }
   };
@@ -96,8 +104,8 @@ function SettingsContent() {
       } else {
         toastError('Failed to disconnect Google account.');
       }
-    } catch (err: any) {
-      toastError(err.message || 'An error occurred during disconnection.');
+    } catch (err) {
+      toastError((err as Error).message || 'An error occurred during disconnection.');
     } finally {
       setIsProcessing(false);
     }
@@ -189,8 +197,8 @@ function SettingsContent() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        Placement Buddy Administrative Console. Settings secure.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

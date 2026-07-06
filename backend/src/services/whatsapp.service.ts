@@ -38,7 +38,7 @@ export const whatsappService = {
       const status = data?.status || data?.data?.status || data?.state || data?.data?.state;
       return status === 'CONNECTED' || status === 'connected';
     } catch (error) {
-      logger.error(error, 'Failed to connect to OpenWA API Gateway for status check');
+      logger.error({ err: error }, 'Failed to connect to OpenWA API Gateway for status check');
       return false;
     }
   },

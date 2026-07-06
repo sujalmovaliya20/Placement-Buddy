@@ -1,4 +1,5 @@
 import type { Drive } from '../models';
+import { env } from './env';
 
 /**
  * Builds a formatted WhatsApp message for a placement drive notification.
@@ -6,7 +7,7 @@ import type { Drive } from '../models';
  * Emojis are used for rich aesthetics and clean visual structure.
  */
 export function buildDriveMessage(drive: Drive): string {
-  const frontendUrl = process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+  const frontendUrl = env.FRONTEND_URL;
   const applyLink = `${frontendUrl}/apply/${drive._id}`;
 
   const deadlineFormatted = new Date(drive.deadline).toLocaleDateString('en-US', {

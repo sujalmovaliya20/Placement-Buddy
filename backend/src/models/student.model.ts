@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 export interface IStudent extends Document {
   first_name: string;
   last_name: string;
+  name: string;
   date_of_birth: Date;
   email: string;
   contact_number: string;
@@ -140,8 +141,15 @@ const studentSchema = new Schema<IStudent>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+// Virtual getter for full name
+studentSchema.virtual('name').get(function (this: IStudent) {
+  return `${this.first_name} ${this.last_name}`.trim();
+});
 
 studentSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

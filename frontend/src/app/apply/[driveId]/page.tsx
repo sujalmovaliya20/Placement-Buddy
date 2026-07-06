@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, TextLink, CtaBlockRed } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, CtaBlockRed } from '@/components/ui';
+import type { Student } from '@shared/index';
 
 interface CustomField {
   key: string;
@@ -33,7 +34,7 @@ export default function ApplyPage() {
   
   const { error: toastError, success: toastSuccess } = useToast();
 
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<Student | null>(null);
   const [drive, setDrive] = useState<Drive | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,14 +43,14 @@ export default function ApplyPage() {
   const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
 
   // Form state for custom fields
-  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadData() {
       try {
         // 1. Fetch Profile
-        const profileRes = await api.get<any>('/students/me');
+        const profileRes = await api.get<Student>('/students/me');
         if (!profileRes.success || !profileRes.data) {
           router.push(`/login?redirectTo=/apply/${driveId}`);
           return;
@@ -67,7 +68,7 @@ export default function ApplyPage() {
         setDrive(driveRes.data);
 
         // Initialize form values with defaults
-        const initialValues: Record<string, any> = {};
+        const initialValues: Record<string, unknown> = {};
         (driveRes.data.custom_fields || []).forEach((field) => {
           if (field.type === 'checkbox') {
             initialValues[field.key] = false;
@@ -77,17 +78,19 @@ export default function ApplyPage() {
         });
         setFormValues(initialValues);
 
-        // 3. Check if already applied
-        const appsRes = await api.getList<any>('/applications', { studentId, driveId });
+        const appsRes = await api.getList<{ _id: string; id?: string }>('/applications', { studentId, driveId });
         if (appsRes.success && appsRes.data && appsRes.data.length > 0) {
-          setAlreadyApplied(true);
-          setApplicationId(appsRes.data[0]._id || appsRes.data[0].id);
+          const firstApp = appsRes.data[0];
+          if (firstApp) {
+            setAlreadyApplied(true);
+            setApplicationId(firstApp._id || firstApp.id || '');
+          }
         }
-      } catch (err: any) {
+      } catch (err) {
         if (err instanceof ApiError && err.statusCode === 401) {
           router.push(`/login?redirectTo=/apply/${driveId}`);
         } else {
-          toastError(err.message || 'Failed to load drive information.');
+          toastError((err as Error).message || 'Failed to load drive information.');
           router.push('/dashboard');
         }
       } finally {
@@ -98,7 +101,7 @@ export default function ApplyPage() {
     loadData();
   }, [driveId, router, toastError]);
 
-  const handleInputChange = (key: string, value: any) => {
+  const handleInputChange = (key: string, value: unknown) => {
     setFormValues((prev) => ({ ...prev, [key]: value }));
     if (formErrors[key]) {
       setFormErrors((prev) => {
@@ -130,7 +133,8 @@ export default function ApplyPage() {
 
   const handleNativeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || alreadyApplied) return;
+    if (isSubmitting || alreadyApplied || !student) return;
+    const currentStudent = student;
 
     if (!validateForm()) {
       toastError('Please fill all required custom fields.');
@@ -140,8 +144,8 @@ export default function ApplyPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<any>('/applications', {
-        student_id: student.id || student._id,
+      const response = await api.post<Record<string, unknown>>('/applications', {
+        student_id: currentStudent.id || currentStudent._id,
         drive_id: driveId,
         custom_answers: formValues,
       });
@@ -150,12 +154,12 @@ export default function ApplyPage() {
         toastSuccess('Application submitted successfully!');
         router.push('/dashboard');
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof ApiError && err.code === 'ALREADY_APPLIED') {
         setAlreadyApplied(true);
         toastError('You have already applied to this drive.');
       } else {
-        toastError(err.message || 'Failed to submit application.');
+        toastError((err as Error).message || 'Failed to submit application.');
       }
     } finally {
       setIsSubmitting(false);
@@ -163,7 +167,8 @@ export default function ApplyPage() {
   };
 
   const handleGoogleFormSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !student) return;
+    const currentStudent = student;
 
     if (alreadyApplied) {
       window.open(drive?.google_form_url || '', '_blank', 'noopener,noreferrer');
@@ -173,16 +178,17 @@ export default function ApplyPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<any>('/applications', {
-        student_id: student.id || student._id,
+      const response = await api.post<{ prefill_url?: string; id?: string; _id?: string }>('/applications', {
+        student_id: currentStudent.id || currentStudent._id,
         drive_id: driveId,
       });
 
       if (response.success) {
         const url = response.data?.prefill_url || drive?.google_form_url || '';
         setPrefillUrl(url);
-        if (response.data?.id || response.data?._id) {
-          setApplicationId(response.data.id || response.data._id);
+        const appId = response.data?.id || response.data?._id;
+        if (appId) {
+          setApplicationId(appId);
         }
         setAlreadyApplied(true);
         toastSuccess('Application recorded. Opening Google Form...');
@@ -192,12 +198,12 @@ export default function ApplyPage() {
       } else {
         toastError('Failed to generate prefill URL.');
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof ApiError && err.code === 'ALREADY_APPLIED') {
         setAlreadyApplied(true);
         toastError('You have already applied to this drive.');
       } else {
-        toastError(err.message || 'Failed to initialize Google Form application.');
+        toastError((err as Error).message || 'Failed to initialize Google Form application.');
       }
     } finally {
       setIsSubmitting(false);
@@ -218,7 +224,7 @@ export default function ApplyPage() {
       if (!linkKey) return '';
       return student.links?.[linkKey] || '';
     }
-    const val = student[profileField];
+    const val = student[profileField as keyof Student];
     if (val === undefined || val === null) return '';
     return String(val);
   };
@@ -238,7 +244,8 @@ export default function ApplyPage() {
   };
 
   const handleToggleApplied = async () => {
-    if (isSubmitting || !drive) return;
+    if (isSubmitting || !drive || !student) return;
+    const currentStudent = student;
     setIsSubmitting(true);
 
     try {
@@ -246,10 +253,13 @@ export default function ApplyPage() {
         // Withdraw application
         let appId = applicationId;
         if (!appId) {
-          const studentId = student.id || student._id;
-          const appsRes = await api.getList<any>('/applications', { studentId, driveId });
+          const studentId = currentStudent.id || currentStudent._id;
+          const appsRes = await api.getList<{ _id: string; id?: string }>('/applications', { studentId, driveId });
           if (appsRes.success && appsRes.data && appsRes.data.length > 0) {
-            appId = appsRes.data[0]._id || appsRes.data[0].id;
+            const firstApp = appsRes.data[0];
+            if (firstApp) {
+              appId = firstApp._id || firstApp.id || '';
+            }
           }
         }
         if (!appId) {
@@ -263,8 +273,8 @@ export default function ApplyPage() {
         toastSuccess('Application withdrawn successfully.');
       } else {
         // Submit/Mark as applied
-        const response = await api.post<any>('/applications', {
-          student_id: student.id || student._id,
+        const response = await api.post<{ id?: string; _id?: string }>('/applications', {
+          student_id: currentStudent.id || currentStudent._id,
           drive_id: driveId,
         });
 
@@ -277,8 +287,8 @@ export default function ApplyPage() {
           toastSuccess('Application status updated to Applied.');
         }
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to update application status.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to update application status.');
     } finally {
       setIsSubmitting(false);
     }
@@ -371,7 +381,7 @@ export default function ApplyPage() {
             <div className="space-y-[24px]">
               {/* Application Status Tracking Toggle Card */}
               <RibbonCard title="APPLICATION STATUS TRACKING" variant={alreadyApplied ? "sage" : "steel"}>
-                <div className="flex items-center justify-between p-[12px] bg-white border border-black">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[12px] bg-white border border-black gap-[12px]">
                   <div className="space-y-[4px]">
                     <span className="font-helvetica text-caption uppercase font-bold text-gray-500">
                       Current Status
@@ -387,7 +397,7 @@ export default function ApplyPage() {
                   <button
                     onClick={handleToggleApplied}
                     disabled={isSubmitting}
-                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors ${
+                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors w-full sm:w-auto ${
                       alreadyApplied
                         ? 'bg-red-100 hover:bg-red-200 text-red-700'
                         : 'bg-green-100 hover:bg-green-200 text-green-700'
@@ -486,7 +496,7 @@ export default function ApplyPage() {
               <div className="space-y-[24px]">
                 {/* Application Status Tracking Toggle Card */}
                 <RibbonCard title="APPLICATION STATUS TRACKING" variant="sage">
-                  <div className="flex items-center justify-between p-[12px] bg-white border border-black">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[12px] bg-white border border-black gap-[12px]">
                     <div className="space-y-[4px]">
                       <span className="font-helvetica text-caption uppercase font-bold text-gray-500">
                         Current Status
@@ -502,7 +512,7 @@ export default function ApplyPage() {
                     <button
                       onClick={handleToggleApplied}
                       disabled={isSubmitting}
-                      className="font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors bg-red-100 hover:bg-red-200 text-red-700"
+                      className="font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors bg-red-100 hover:bg-red-200 text-red-700 w-full sm:w-auto"
                     >
                       {isSubmitting ? 'Processing...' : 'Withdraw Application'}
                     </button>
@@ -543,7 +553,7 @@ export default function ApplyPage() {
                                 type="checkbox"
                                 checked={!!formValues[field.key]}
                                 onChange={(e) => handleInputChange(field.key, e.target.checked)}
-                                className="h-[16px] w-[16px] rounded-none border-[#000000] bg-[#ffffff] accent-[#000000]"
+                                className="h-[16px] w-[16px] rounded-none border-[#000000] bg-[#ffffff] accent-[#000000] relative after:content-[''] after:absolute after:inset-[-14px] after:block"
                               />
                               <label htmlFor={field.key} className="font-times-new-roman text-body-sm select-none">
                                 I confirm my agreement and correctness.
@@ -551,7 +561,7 @@ export default function ApplyPage() {
                             </div>
                           ) : field.type === 'select' ? (
                             <select
-                              value={formValues[field.key] || ''}
+                              value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
                                 hasError ? 'border-[#e91d2a]' : ''
@@ -564,7 +574,7 @@ export default function ApplyPage() {
                           ) : field.type === 'date' ? (
                             <input
                               type="date"
-                              value={formValues[field.key] || ''}
+                              value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
                                 hasError ? 'border-[#e91d2a]' : ''
@@ -573,7 +583,7 @@ export default function ApplyPage() {
                           ) : field.type === 'time' ? (
                             <input
                               type="time"
-                              value={formValues[field.key] || ''}
+                              value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
                                 hasError ? 'border-[#e91d2a]' : ''
@@ -583,7 +593,7 @@ export default function ApplyPage() {
                             /* Text type fallback */
                             <textarea
                               rows={3}
-                              value={formValues[field.key] || ''}
+                              value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body p-[8px] rounded-none focus:outline-none w-full ${
                                 hasError ? 'border-[#e91d2a]' : ''
@@ -618,8 +628,8 @@ export default function ApplyPage() {
         )}
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        Corporate Recruitment Database system. All transactions logged.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

@@ -3,9 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, ApiError } from '@/lib/api';
+import { api, API_BASE_URL } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
+
+interface AdminAuthResponse {
+  role: string;
+}
 
 interface Drive {
   _id: string;
@@ -34,7 +38,7 @@ interface Application {
   student_id: Student;
   status: 'applied' | 'shortlisted' | 'rejected';
   applied_at: string;
-  custom_answers?: Record<string, any>;
+  custom_answers?: Record<string, unknown>;
 }
 
 interface FormField {
@@ -78,7 +82,7 @@ export default function AdminDrivesPage() {
   useEffect(() => {
     async function verifyAuthAndLoad() {
       try {
-        const authRes = await api.get<any>('/auth/me');
+        const authRes = await api.get<AdminAuthResponse>('/auth/me');
         if (!authRes.success || (authRes.data.role !== 'tpo' && authRes.data.role !== 'superadmin')) {
           toastError('Unauthorized: Access restricted to TPO administrators.');
           router.push('/login');
@@ -125,8 +129,8 @@ export default function AdminDrivesPage() {
           );
           setApplicantCounts(counts);
         }
-      } catch (err: any) {
-        toastError(err.message || 'Failed to verify admin status or load drives.');
+      } catch (err) {
+        toastError((err as Error).message || 'Failed to verify admin status or load drives.');
         router.push('/login');
       } finally {
         setIsLoading(false);
@@ -146,8 +150,8 @@ export default function AdminDrivesPage() {
         setApplications((prev) => ({ ...prev, [driveId]: appList }));
         setApplicantCounts((prev) => ({ ...prev, [driveId]: appList.length }));
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to load applicants.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to load applicants.');
     } finally {
       setLoadingApps((prev) => ({ ...prev, [driveId]: false }));
     }
@@ -170,8 +174,8 @@ export default function AdminDrivesPage() {
         setFormFields((prev) => ({ ...prev, [driveId]: res.data || [] }));
         toastSuccess('Successfully fetched fields from Google Form HTML.');
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to parse Google Form. Ensure the URL is public.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to parse Google Form. Ensure the URL is public.');
     } finally {
       setLoadingFields((prev) => ({ ...prev, [driveId]: false }));
     }
@@ -190,19 +194,23 @@ export default function AdminDrivesPage() {
   const handleSaveMapping = async (driveId: string) => {
     const driveMapping = mappings[driveId];
     try {
-      const res = await api.put<any>(`/admin/drives/${driveId}/mapping`, { field_mapping: driveMapping });
+      const res = await api.put<Record<string, unknown>>(`/admin/drives/${driveId}/mapping`, {
+        field_mapping: {
+          ...driveMapping,
+        },
+      });
       if (res.success) {
         toastSuccess('Field mapping configuration saved successfully.');
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to update field mapping.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to update field mapping.');
     }
   };
 
   const handleSendWhatsAppNotification = async (driveId: string) => {
     setSendingNotify((prev) => ({ ...prev, [driveId]: true }));
     try {
-      const res = (await api.post<any>(`/admin/drives/${driveId}/notify`, {})) as unknown as {
+      const res = await api.post<unknown>(`/admin/drives/${driveId}/notify`, {}) as unknown as {
         success: boolean;
         message: string;
         error?: string;
@@ -212,8 +220,8 @@ export default function AdminDrivesPage() {
       } else {
         toastError(res.error || res.message || 'Notification failed.');
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to dispatch notification.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to dispatch notification.');
     } finally {
       setSendingNotify((prev) => ({ ...prev, [driveId]: false }));
     }
@@ -221,7 +229,7 @@ export default function AdminDrivesPage() {
 
   const handleUpdateApplicationStatus = async (driveId: string, appId: string, newStatus: 'applied' | 'shortlisted' | 'rejected') => {
     try {
-      const res = await api.put<any>(`/applications/${appId}/status`, { status: newStatus });
+      const res = await api.put<Record<string, unknown>>(`/applications/${appId}/status`, { status: newStatus });
       if (res.success) {
         toastSuccess(`Applicant status updated to ${newStatus.toUpperCase()}`);
         // Refresh local applications list
@@ -233,8 +241,8 @@ export default function AdminDrivesPage() {
           };
         });
       }
-    } catch (err: any) {
-      toastError(err.message || 'Failed to update application status.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to update application status.');
     }
   };
 
@@ -244,8 +252,8 @@ export default function AdminDrivesPage() {
       toastSuccess('Logged out successfully');
       router.push('/login');
       router.refresh();
-    } catch (err: any) {
-      toastError(err.message || 'Failed to log out.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to log out.');
     }
   };
 
@@ -260,8 +268,6 @@ export default function AdminDrivesPage() {
   }
 
   if (!isAdmin) return null;
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
   // Helper to map status to RibbonCard variant
   const getCardVariant = (status: Drive['status']) => {
@@ -287,7 +293,7 @@ export default function AdminDrivesPage() {
 
       <main className="flex-1 p-[24px] space-y-[24px] max-w-7xl mx-auto w-full">
         {/* Navigation & Header Actions */}
-        <div className="flex items-center justify-between border-b border-[#000000] pb-[12px]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#000000] pb-[12px] gap-[12px]">
           <div>
             <h1 className="font-arial-black text-heading-1 uppercase leading-none">
               Drives Administrator
@@ -297,7 +303,7 @@ export default function AdminDrivesPage() {
             </p>
           </div>
 
-          <div className="flex gap-[8px]">
+          <div className="flex gap-[8px] w-full sm:w-auto">
             <Link href="/admin/drives/new">
               <ButtonPrimary>
                 ★ CREATE NEW DRIVE
@@ -313,7 +319,7 @@ export default function AdminDrivesPage() {
         <div className="space-y-[24px]">
           {drives.length === 0 ? (
             <div className="border border-dashed border-[#000000] p-[40px] text-center font-times-new-roman text-body">
-              No placement drives registered in the system database. Click 'Create New Drive' to begin.
+              No placement drives registered in the system database. Click &apos;Create New Drive&apos; to begin.
             </div>
           ) : (
             drives.map((drive) => {
@@ -378,7 +384,7 @@ export default function AdminDrivesPage() {
                           </ButtonPrimary>
 
                           <a
-                            href={`${baseUrl}/admin/drives/${drive._id}/export`}
+                            href={`${API_BASE_URL}/admin/drives/${drive._id}/export`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -391,7 +397,7 @@ export default function AdminDrivesPage() {
                         {/* Google Form Mapping Editor */}
                         {drive.source_type === 'google_form' && (
                           <div className="border border-[#000000] p-[16px] bg-[#ffffff] space-y-[16px]">
-                            <div className="flex items-center justify-between border-b border-[#000000] pb-[8px]">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#000000] pb-[8px] gap-[12px]">
                               <h3 className="font-helvetica text-heading-3 uppercase font-bold">
                                 Google Form Mapping Configuration
                               </h3>
@@ -415,12 +421,12 @@ export default function AdminDrivesPage() {
                                     <label className="font-helvetica text-ui-label text-ink block font-bold">
                                       {field.label}
                                     </label>
-                                    <div className="flex gap-[8px]">
+                                    <div className="flex flex-col sm:flex-row gap-[8px]">
                                       {/* Native styled dropdown */}
                                       <select
                                         value={currentMapping}
                                         onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[4px] rounded-none focus:outline-none w-[60%]"
+                                        className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[8px] rounded-none focus:outline-none w-full sm:w-[60%] h-[44px]"
                                       >
                                         <option value="">Select parsed field...</option>
                                         {fieldsList.map((f) => (
@@ -434,7 +440,7 @@ export default function AdminDrivesPage() {
                                         placeholder="Or type entryId manually"
                                         value={currentMapping}
                                         onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="w-[40%]"
+                                        className="w-full sm:w-[40%]"
                                       />
                                     </div>
                                   </div>
@@ -463,75 +469,130 @@ export default function AdminDrivesPage() {
                               No students have applied to this recruitment drive yet.
                             </div>
                           ) : (
-                            <div className="border border-[#000000] overflow-x-auto rounded-none">
-                              <table className="w-full text-left border-collapse">
-                                <thead>
-                                  <tr className="bg-[#ffffff]">
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Enrollment No
-                                    </th>
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Name
-                                    </th>
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Course
-                                    </th>
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      CGPA (Prev Sem)
-                                    </th>
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Status
-                                    </th>
-                                    <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                      Actions
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {driveApps.map((app) => (
-                                    <tr key={app._id} className="border-b border-[#000000] last:border-b-0">
-                                      <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.enrollment_number}
-                                      </td>
-                                      <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000] font-bold">
-                                        {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
-                                      </td>
-                                      <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.course}
-                                      </td>
-                                      <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        {app.student_id?.cgpa_previous_semester}
-                                      </td>
-                                      <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                        <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
-                                            app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
-                                          }`}>
-                                          {app.status}
-                                        </span>
-                                      </td>
-                                      <td className="px-[12px] py-[8px] flex gap-[8px]">
-                                        {app.status !== 'shortlisted' && (
-                                          <button
-                                            onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
-                                            className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
-                                          >
-                                            SHORTLIST
-                                          </button>
-                                        )}
-                                        {app.status !== 'rejected' && (
-                                          <button
-                                            onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
-                                            className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
-                                          >
-                                            REJECT
-                                          </button>
-                                        )}
-                                      </td>
+                            <>
+                              {/* Desktop Table View */}
+                              <div className="hidden md:block border border-[#000000] overflow-x-auto rounded-none">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="bg-[#ffffff]">
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        Enrollment No
+                                      </th>
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        Name
+                                      </th>
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        Course
+                                      </th>
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        CGPA (Prev Sem)
+                                      </th>
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        Status
+                                      </th>
+                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
+                                        Actions
+                                      </th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+                                  </thead>
+                                  <tbody>
+                                    {driveApps.map((app) => (
+                                      <tr key={app._id} className="border-b border-[#000000] last:border-b-0">
+                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                          {app.student_id?.enrollment_number}
+                                        </td>
+                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000] font-bold">
+                                          {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
+                                        </td>
+                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                          {app.student_id?.course}
+                                        </td>
+                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                          {app.student_id?.cgpa_previous_semester}
+                                        </td>
+                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                          <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
+                                              app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
+                                            }`}>
+                                            {app.status}
+                                          </span>
+                                        </td>
+                                        <td className="px-[12px] py-[8px] flex gap-[8px]">
+                                          {app.status !== 'shortlisted' && (
+                                            <button
+                                              onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
+                                              className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
+                                            >
+                                              SHORTLIST
+                                            </button>
+                                          )}
+                                          {app.status !== 'rejected' && (
+                                            <button
+                                              onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
+                                              className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
+                                            >
+                                              REJECT
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {/* Mobile Stacked Cards View */}
+                              <div className="block md:hidden space-y-[12px]">
+                                {driveApps.map((app) => (
+                                  <div key={app._id} className="border border-[#000000] p-[12px] bg-[#ffffff] space-y-[8px] text-body-sm font-times-new-roman">
+                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Enrollment No</span>
+                                      <span className="text-[#000000]">{app.student_id?.enrollment_number}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Name</span>
+                                      <span className="text-[#000000] font-bold">
+                                        {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Course</span>
+                                      <span className="text-[#000000]">{app.student_id?.course}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">CGPA (Prev Sem)</span>
+                                      <span className="text-[#000000]">{app.student_id?.cgpa_previous_semester}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Status</span>
+                                      <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
+                                          app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
+                                        }`}>
+                                        {app.status}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-[8px] pt-[4px] justify-end">
+                                      {app.status !== 'shortlisted' && (
+                                        <button
+                                          onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
+                                          className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
+                                        >
+                                          SHORTLIST
+                                        </button>
+                                      )}
+                                      {app.status !== 'rejected' && (
+                                        <button
+                                          onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
+                                          className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
+                                        >
+                                          REJECT
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
                           )}
                         </div>
 
@@ -545,8 +606,8 @@ export default function AdminDrivesPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        TPO Recruitment Registry System. Secure admin terminal.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

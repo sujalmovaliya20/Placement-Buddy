@@ -4,6 +4,7 @@
  * This is the application entry point. Run with: tsx src/server.ts
  */
 
+import './config/validateEnv';
 import { env } from './config/env';
 import { createApp } from './app';
 import { logger } from './utils/logger';

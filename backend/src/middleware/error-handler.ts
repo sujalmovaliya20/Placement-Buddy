@@ -11,6 +11,7 @@ import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 import { ZodError } from 'zod';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
+import { env } from '../config/env';
 
 /**
  * Custom application error with HTTP status code and machine-readable error code.
@@ -154,7 +155,7 @@ export function globalErrorHandler(
     error: {
       code: 'INTERNAL_SERVER_ERROR',
       message:
-        process.env['NODE_ENV'] === 'production'
+        env.NODE_ENV === 'production'
           ? 'An unexpected error occurred'
           : err.message,
     },

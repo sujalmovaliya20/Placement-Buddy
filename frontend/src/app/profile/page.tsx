@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '@/lib/api';
 import { updateProfileSchema } from '@shared/index';
-import type { UpdateProfileInput } from '@shared/index';
+import type { UpdateProfileInput, Student } from '@shared/index';
 import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
 
 export default function ProfilePage() {
@@ -67,15 +67,13 @@ export default function ProfilePage() {
   const watchedTwelfthResult = watch('twelfth_result');
   const watchedCgpa = watch('cgpa_previous_semester');
   const watchedResumeUrl = watch('resume_url');
-  const watchedGithub = watch('links.github');
-  const watchedLinkedin = watch('links.linkedin');
-  const watchedPortfolio = watch('links.portfolio');
+
 
   // Load existing profile data on mount
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const response = await api.get<any>('/students/me');
+        const response = await api.get<Student>('/students/me');
         if (response.success && response.data) {
           const p = response.data;
           setValue('first_name', p.first_name || '');
@@ -107,7 +105,7 @@ export default function ProfilePage() {
           setValue('links.linkedin', p.links?.linkedin || '');
           setValue('links.portfolio', p.links?.portfolio || '');
         }
-      } catch (err: any) {
+      } catch (err) {
         if (err instanceof ApiError && err.statusCode === 401) {
           router.push('/login?redirectTo=/profile');
         } else {
@@ -180,7 +178,10 @@ export default function ProfilePage() {
     formData.append('resume', file);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!baseUrl) {
+        throw new Error('NEXT_PUBLIC_API_URL environment variable is missing.');
+      }
       const res = await fetch(`${baseUrl}/students/me/resume`, {
         method: 'POST',
         body: formData,
@@ -197,8 +198,8 @@ export default function ProfilePage() {
         setSuccessMessage('Resume uploaded successfully.');
         setTimeout(() => setSuccessMessage(null), 3000);
       }
-    } catch (err: any) {
-      setGeneralError(err.message || 'Failed to upload file.');
+    } catch (err) {
+      setGeneralError((err as Error).message || 'Failed to upload file.');
     } finally {
       setIsUploading(false);
     }
@@ -211,13 +212,13 @@ export default function ProfilePage() {
     setSuccessMessage(null);
 
     try {
-      const response = await api.put<any>('/students/me', data);
+      const response = await api.put<Record<string, unknown>>('/students/me', data);
       if (response.success) {
         setSuccessMessage('Profile saved successfully.');
         router.refresh();
         setTimeout(() => setSuccessMessage(null), 3000);
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof ApiError) {
         setGeneralError(err.message);
       } else {
@@ -268,7 +269,7 @@ export default function ProfilePage() {
               <ul className="list-disc list-inside mt-[4px] font-normal">
                 {Object.entries(errors).map(([key, err]) => {
                   const label = key.replace(/_/g, ' ').replace('links.', 'Social Link: ').toUpperCase();
-                  const message = (err as any)?.message || 'Invalid value';
+                  const message = (err as { message?: string })?.message || 'Invalid value';
                   return (
                     <li key={key}>
                       <span className="font-bold">{label}</span>: {message}
@@ -288,7 +289,7 @@ export default function ProfilePage() {
                   1. Personal Information
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                   <TextInput
                     label="First Name"
                     id="first_name"
@@ -308,7 +309,7 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                   <TextInput
                     label="Date of Birth"
                     id="date_of_birth"
@@ -368,7 +369,7 @@ export default function ProfilePage() {
                   error={errors.enrollment_number?.message}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
                   <TextInput
                     label="10th Percentage"
                     id="tenth_result"
@@ -415,7 +416,7 @@ export default function ProfilePage() {
                   Leave blank if not yet completed.
                 </p>
 
-                <div className="grid grid-cols-2 gap-[16px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                   <TextInput
                     label="Semester 1 SGPA"
                     id="sem1_sgpa"
@@ -619,8 +620,8 @@ export default function ProfilePage() {
         </RibbonCard>
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        Secure profile builder system. All transactions audited.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

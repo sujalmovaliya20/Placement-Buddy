@@ -9,7 +9,7 @@ import { studentController } from '../controllers/student.controller';
 import { asyncHandler } from '../utils/async-handler';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
-import { updateProfileSchema } from '@shared/index';
+import { signupSchema, updateProfileSchema, listQuerySchema } from '@shared/index';
 import { isAdmin, isOwner } from '../middleware/authorize.middleware';
 import multer from 'multer';
 
@@ -34,10 +34,10 @@ router.put('/me', authenticate, validate({ body: updateProfileSchema }), asyncHa
 router.post('/me/resume', authenticate, upload.single('resume'), asyncHandler(studentController.uploadResume));
 
 // General administrative operations
-router.get('/', authenticate, isAdmin, asyncHandler(studentController.list));
+router.get('/', authenticate, isAdmin, validate({ query: listQuerySchema }), asyncHandler(studentController.list));
 router.get('/:id', authenticate, isOwner('student'), asyncHandler(studentController.getById));
-router.post('/', authenticate, isAdmin, asyncHandler(studentController.create));
-router.patch('/:id', authenticate, isOwner('student'), asyncHandler(studentController.update));
+router.post('/', authenticate, isAdmin, validate({ body: signupSchema }), asyncHandler(studentController.create));
+router.patch('/:id', authenticate, isOwner('student'), validate({ body: updateProfileSchema.partial() }), asyncHandler(studentController.update));
 router.delete('/:id', authenticate, isAdmin, asyncHandler(studentController.delete));
 
 export const studentRoutes = router;

@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { whatsappService } from '../services/whatsapp.service';
 import { buildDriveMessage } from '../config/whatsappTemplates';
 import { env } from '../config/env';
+import { PAGINATION } from '../config/constants';
 
 /**
  * Helper to normalize Google Form URL to the public viewform format.
@@ -148,8 +149,11 @@ export const adminDriveController = {
   },
 
   async list(req: Request, res: Response): Promise<void> {
-    const page = req.query['page'] ? Number(req.query['page']) : 1;
-    const limit = req.query['limit'] ? Number(req.query['limit']) : 20;
+    const page = req.query['page'] ? Number(req.query['page']) : PAGINATION.DEFAULT_PAGE;
+    const limit = Math.min(
+      req.query['limit'] ? Number(req.query['limit']) : PAGINATION.DEFAULT_LIMIT,
+      PAGINATION.MAX_LIMIT
+    );
     const search = req.query['search'] as string | undefined;
     const sortBy = req.query['sortBy'] as string ?? 'createdAt';
     const sortOrder = req.query['sortOrder'] === 'desc' ? -1 : 1;

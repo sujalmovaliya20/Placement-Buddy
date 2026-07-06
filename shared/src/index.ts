@@ -53,7 +53,21 @@ export type {
 } from './types/api';
 
 // Validation
-export { signupSchema, loginSchema, updateProfileSchema } from './validation';
+export {
+  signupSchema,
+  loginSchema,
+  updateProfileSchema,
+  createDriveSchema,
+  updateDriveSchema,
+  createApplicationSchema,
+  updateApplicationStatusSchema,
+  parseGoogleFormSchema,
+  parseFormStructureSchema,
+  parsePrefillReferenceSchema,
+  updateMappingSchema,
+  listQuerySchema,
+} from './validation';
 export type { SignupInput, LoginInput, UpdateProfileInput } from './validation';
+
 
 

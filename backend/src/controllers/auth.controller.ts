@@ -3,21 +3,20 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '../config/env';
 import { StudentModel, AdminModel } from '../models';
-import { studentService } from '../services/student.service';
 import { AppError } from '../middleware/error-handler';
 import { StatusCodes } from 'http-status-codes';
 
 function generateTokens(user: { id: string; email: string; role: string }) {
   const payload = { id: user.id, email: user.email, role: user.role };
   const accessToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '7d' });
+  const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
   return { accessToken, refreshToken };
 }
 
 const cookieOptions = (maxAge: number) => ({
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  sameSite: 'lax' as const, // Use 'lax' for cross-subdomain cookie support in production
   maxAge,
 });
 
@@ -135,7 +134,7 @@ export const authController = {
       }
 
       try {
-        const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+        const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as any;
         const { accessToken } = generateTokens({
           id: decoded.id,
           email: decoded.email,

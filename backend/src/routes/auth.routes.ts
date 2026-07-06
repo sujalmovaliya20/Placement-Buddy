@@ -8,7 +8,7 @@ import { asyncHandler } from '../utils/async-handler';
 
 const router = Router();
 
-router.post('/signup', validate({ body: signupSchema }), asyncHandler(authController.signup));
+router.post('/signup', loginRateLimiter, validate({ body: signupSchema }), asyncHandler(authController.signup));
 router.post('/login', loginRateLimiter, validate({ body: loginSchema }), asyncHandler(authController.login));
 router.post('/refresh', asyncHandler(authController.refresh));
 router.post('/logout', asyncHandler(authController.logout));

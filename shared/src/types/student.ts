@@ -7,6 +7,7 @@
 export interface Student {
   /** Unique database-generated ID */
   id: string;
+  _id?: string;
 
   /** First name of the student */
   first_name: string;
@@ -80,3 +81,7 @@ export type CreateStudentPayload = Omit<Student, 'id' | 'createdAt' | 'updatedAt
 
 /** Payload for updating an existing student */
 export type UpdateStudentPayload = Partial<CreateStudentPayload>;
+
+export type PlacementStatus = 'unplaced' | 'placed' | 'dream_placed';
+export type Department = string;
+

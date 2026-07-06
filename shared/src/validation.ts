@@ -48,3 +48,87 @@ export const updateProfileSchema = z.object({
 }).omit({ email: true });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const createDriveSchema = z.object({
+  company_name: z.string().min(1, 'Company name is required'),
+  role: z.string().min(1, 'Role is required'),
+  deadline: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date({ invalid_type_error: 'Deadline must be a valid date' })
+  ),
+  source_type: z.enum(['native', 'google_form']),
+  google_form_url: z.string().url('Please enter a valid URL').nullable().optional().or(z.literal('')),
+  field_mapping: z.record(z.string(), z.string()).nullable().optional(),
+  manual_field_mapping: z
+    .array(
+      z.object({
+        form_label: z.string().min(1, 'Form label is required'),
+        profile_field: z.string().min(1, 'Profile field is required'),
+      })
+    )
+    .nullable()
+    .optional(),
+  custom_fields: z
+    .array(
+      z.object({
+        key: z.string().min(1, 'Field key is required'),
+        label: z.string().min(1, 'Field label is required'),
+        type: z.string().min(1, 'Field type is required'),
+        required: z.boolean(),
+      })
+    )
+    .optional(),
+  status: z.enum(['draft', 'open', 'in_progress', 'completed', 'cancelled']).optional(),
+});
+
+export const updateDriveSchema = createDriveSchema.partial();
+
+export const createApplicationSchema = z.object({
+  student_id: z.string().min(1, 'Student ID is required'),
+  drive_id: z.string().min(1, 'Drive ID is required'),
+  custom_answers: z.record(z.string(), z.any()).optional(),
+  status: z.enum(['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'selected', 'rejected', 'withdrawn']).optional(),
+});
+
+export const updateApplicationStatusSchema = z.object({
+  status: z.enum(['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'selected', 'rejected', 'withdrawn']),
+  note: z.string().optional(),
+});
+
+// Admin-specific Google form parser validations
+export const parseGoogleFormSchema = z.object({
+  googleFormUrl: z.string().url('Please enter a valid Google Form URL'),
+});
+
+export const parseFormStructureSchema = z.object({
+  editor_url: z.string().url('Please enter a valid Google Form editor URL'),
+});
+
+export const parsePrefillReferenceSchema = z.object({
+  prefill_url: z.string().url('Please enter a valid Google Form prefilled reference URL'),
+});
+
+export const updateMappingSchema = z.object({
+  field_mapping: z.record(z.string(), z.string()).nullable().optional(),
+  manual_field_mapping: z
+    .array(
+      z.object({
+        form_label: z.string().min(1, 'Form label is required'),
+        profile_field: z.string().min(1, 'Profile field is required'),
+      })
+    )
+    .nullable()
+    .optional(),
+});
+
+export const listQuerySchema = z.object({
+  page: z.preprocess((val) => (val ? Number(val) : undefined), z.number().int().min(1).optional()),
+  limit: z.preprocess((val) => (val ? Number(val) : undefined), z.number().int().min(1).optional()),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  search: z.string().optional(),
+  status: z.string().optional(),
+  studentId: z.string().optional(),
+  driveId: z.string().optional(),
+});
+

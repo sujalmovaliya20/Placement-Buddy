@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard, TextLink } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard } from '@/components/ui';
+import type { Student } from '@shared/index';
+
+interface DashboardAuthResponse {
+  role: string;
+  profile: Student;
+}
 
 interface Drive {
   _id: string;
@@ -28,7 +34,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { error: toastError, success: toastSuccess } = useToast();
 
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<Student | null>(null);
   const [drives, setDrives] = useState<Drive[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +45,7 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       try {
         // 1. Fetch Profile and Role
-        const authRes = await api.get<any>('/auth/me');
+        const authRes = await api.get<DashboardAuthResponse>('/auth/me');
         if (!authRes.success || !authRes.data) {
           router.push('/login?redirectTo=/dashboard');
           return;
@@ -70,11 +76,11 @@ export default function DashboardPage() {
         if (appsRes.success) {
           setApplications(appsRes.data || []);
         }
-      } catch (err: any) {
+      } catch (err) {
         if (err instanceof ApiError && err.statusCode === 401) {
           router.push('/login?redirectTo=/dashboard');
         } else {
-          toastError(err.message || 'Failed to load dashboard data.');
+          toastError((err as Error).message || 'Failed to load dashboard data.');
         }
       } finally {
         setIsLoading(false);
@@ -90,8 +96,8 @@ export default function DashboardPage() {
       toastSuccess('Logged out successfully');
       router.push('/login');
       router.refresh();
-    } catch (err: any) {
-      toastError(err.message || 'Failed to log out.');
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to log out.');
     }
   };
 
@@ -137,7 +143,7 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-[24px] space-y-[24px] max-w-7xl mx-auto w-full">
         {/* Navigation / Header Actions */}
-        <div className="flex items-center justify-between border-b border-[#000000] pb-[12px]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#000000] pb-[12px] gap-[12px]">
           <div className="flex flex-col gap-[4px]">
             <h1 className="font-arial-black text-heading-1 uppercase leading-none">
               Welcome back, {student?.first_name}!
@@ -278,8 +284,8 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        Placement Buddy System. Designed in 1996 for maximum corporate catalog clarity.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

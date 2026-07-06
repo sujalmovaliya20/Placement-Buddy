@@ -65,8 +65,6 @@ const config: Config = {
         'times-new-roman': ['Times New Roman', 'Times', 'serif'],
       },
       fontSize: {
-        display: '36px',
-        'heading-1': '24px',
         'heading-2': '16px',
         'heading-3': '14px',
         body: '14px',

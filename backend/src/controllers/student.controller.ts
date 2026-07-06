@@ -116,6 +116,23 @@ export const studentController = {
       throw new AppError('No file uploaded or file type is not PDF', StatusCodes.BAD_REQUEST, 'BAD_REQUEST');
     }
 
+    // Validate PDF magic bytes (%PDF)
+    const buffer = req.file.buffer;
+    const isPdfMagicBytes =
+      buffer.length >= 4 &&
+      buffer[0] === 0x25 && // %
+      buffer[1] === 0x50 && // P
+      buffer[2] === 0x44 && // D
+      buffer[3] === 0x46;   // F
+
+    if (!isPdfMagicBytes) {
+      throw new AppError(
+        'Only valid PDF files are allowed. Magic bytes mismatch.',
+        StatusCodes.BAD_REQUEST,
+        'INVALID_FILE_TYPE'
+      );
+    }
+
     // Check Cloudinary config is present
     if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
       throw new AppError(

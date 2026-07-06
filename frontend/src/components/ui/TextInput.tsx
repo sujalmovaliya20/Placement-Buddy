@@ -3,14 +3,15 @@ import React from 'react';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  labelClassName?: string;
 }
 
 export const TextInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className = '', ...props }, ref) => {
+  ({ label, error, className = '', labelClassName = 'text-current', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-[4px] w-full">
         {label && (
-          <label className="font-helvetica text-ui-label text-[#000000] select-none font-bold">
+          <label className={`font-helvetica text-ui-label select-none font-bold ${labelClassName}`}>
             {label}
           </label>
         )}

@@ -7,7 +7,10 @@
 
 import type { ApiResponse, ApiErrorResponse, PaginatedResponse } from '@shared/types/api';
 
-const API_BASE_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:5000/api/v1';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_BASE_URL) {
+  throw new Error('Critical Configuration Error: NEXT_PUBLIC_API_URL environment variable is missing.');
+}
 
 /** Error thrown when an API request fails */
 export class ApiError extends Error {

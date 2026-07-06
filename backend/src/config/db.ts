@@ -9,7 +9,7 @@ export async function connectDatabase(): Promise<void> {
   let attempt = 1;
 
   const options: mongoose.ConnectOptions = {
-    maxPoolSize: 10,
+    maxPoolSize: env.MONGODB_MAX_POOL_SIZE,
   };
 
   while (attempt <= MAX_RETRIES) {

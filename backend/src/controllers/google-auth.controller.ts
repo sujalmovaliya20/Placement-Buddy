@@ -44,11 +44,11 @@ export const googleAuthController = {
    * Public route (not token authenticated). Authenticates via state token.
    * Exchanges code for tokens, encrypts the refresh token, and updates Admin profile.
    */
-  async callback(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async callback(req: Request, res: Response, _next: NextFunction): Promise<void> {
     const { code, state } = req.query;
 
     if (!code || !state) {
-      return res.redirect(`${env.CORS_ORIGIN}/admin/settings?error=${encodeURIComponent('Missing OAuth code or state parameter')}`);
+      return res.redirect(`${env.FRONTEND_URL}/admin/settings?error=${encodeURIComponent('Missing OAuth code or state parameter')}`);
     }
 
     try {
@@ -58,7 +58,7 @@ export const googleAuthController = {
         const decoded = jwt.verify(state as string, env.JWT_SECRET) as { adminId: string };
         adminId = decoded.adminId;
       } catch (err) {
-        return res.redirect(`${env.CORS_ORIGIN}/admin/settings?error=${encodeURIComponent('Invalid or expired state parameter. Please try again.')}`);
+        return res.redirect(`${env.FRONTEND_URL}/admin/settings?error=${encodeURIComponent('Invalid or expired state parameter. Please try again.')}`);
       }
 
       // 2. Exchange authorization code for access/refresh tokens
@@ -69,7 +69,7 @@ export const googleAuthController = {
         // We force prompt='consent' in generateAuthUrl, but just in case:
         logger.error({ adminId }, 'Google OAuth callback succeeded but no refresh token returned');
         return res.redirect(
-          `${env.CORS_ORIGIN}/admin/settings?error=${encodeURIComponent(
+          `${env.FRONTEND_URL}/admin/settings?error=${encodeURIComponent(
             'Google did not return a refresh token. Please go to your Google Account permissions, remove Placement Buddy, and try again.'
           )}`
         );
@@ -90,10 +90,10 @@ export const googleAuthController = {
       logger.info({ adminId }, 'Admin successfully connected Google OAuth account');
       
       // Redirect back to admin settings with success parameter
-      res.redirect(`${env.CORS_ORIGIN}/admin/settings?success=google_connected`);
+      res.redirect(`${env.FRONTEND_URL}/admin/settings?success=google_connected`);
     } catch (error: any) {
       logger.error({ err: error }, 'Google OAuth callback flow failed');
-      res.redirect(`${env.CORS_ORIGIN}/admin/settings?error=${encodeURIComponent(error.message || 'Google Auth flow failed')}`);
+      res.redirect(`${env.FRONTEND_URL}/admin/settings?error=${encodeURIComponent(error.message || 'Google Auth flow failed')}`);
     }
   },
 

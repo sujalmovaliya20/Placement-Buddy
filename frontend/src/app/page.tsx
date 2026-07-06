@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col bg-tint-peach">
       <TopBanner>
-        PLACEMENT BUDDY ONLINE SYSTEM v1.0 (DELL 1996 EDITION)
+        PLACEMENT BUDDY ONLINE SYSTEM v1.0
       </TopBanner>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-[40px] text-center bg-[#ffffff]">
+      <main className="flex-1 flex flex-col items-center justify-center p-[40px] text-center bg-transparent">
         <div className="max-w-[600px] border border-[#000000] p-[24px] rounded-none bg-tint-sage flex flex-col items-center gap-[16px]">
           {/* Active Burst */}
           <div className="bg-[#fcc20f] text-[#000000] border border-[#000000] font-helvetica text-ui-label font-bold px-[8px] py-[4px] uppercase select-none">
@@ -59,8 +59,8 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#ffffff] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        © 1996 Placement Buddy Corporation. All rights reserved.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );

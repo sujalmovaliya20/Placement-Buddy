@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { signupSchema } from '@shared/index';
 import { z } from 'zod';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, AuthFormCard, TextLink, CtaBlockRed } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, AuthFormCard, TextLink } from '@/components/ui';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -155,7 +155,7 @@ export default function SignupPage() {
     const payload = getPayload();
 
     try {
-      const response = await api.post<any>('/auth/signup', payload);
+      const response = await api.post<Record<string, unknown>>('/auth/signup', payload);
 
       if (response.success) {
         setSuccessMessage('Registration successful! Redirecting to login page...');
@@ -177,25 +177,28 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff]">
+    <div className="flex-1 flex flex-col bg-tint-periwinkle">
       <TopBanner>
         STUDENT SIGNUP REGISTRATION SYSTEM v1.0 // ENTERPRISE GATEWAY
       </TopBanner>
 
+      <div className="bg-tint-salmon text-ink font-arial-black text-display uppercase font-black px-[16px] py-[24px] border-b border-frame-ink text-center select-none">
+        JOIN THE PLACEMENT DRIVE
+      </div>
+
       <main className="flex-1 flex flex-col items-center justify-center p-[24px]">
         <div className="w-full max-w-2xl">
-          <AuthFormCard title={`STUDENT REGISTRATION FORM -- STEP ${step} OF 4`}>
-            {/* Warning sticker: Max one CtaBlockRed per page */}
-            {step === 1 && (
-              <CtaBlockRed className="mb-[16px] flex flex-col gap-[8px]">
-                <span className="font-helvetica text-heading-3 uppercase font-bold block">
-                  ★ DOMAIN RESTRICTION WARNING ★
-                </span>
-                <span className="font-times-new-roman text-body block">
-                  Your email address must be a valid Gmail address (@gmail.com) or match the college domain suffix (@college.edu). Other emails will be blocked by system security rules automatically.
-                </span>
-              </CtaBlockRed>
-            )}
+          <AuthFormCard
+            title={`STUDENT REGISTRATION FORM -- STEP ${step} OF 4`}
+            accentBgClassName={
+              step === 1 ? 'bg-tint-sage' :
+              step === 2 ? 'bg-tint-lime' :
+              step === 3 ? 'bg-tint-sky' :
+              'bg-tint-peach'
+            }
+            bgClassName="bg-frame-ink"
+            textClassName="text-canvas"
+          >
 
             <form onSubmit={handleSubmit} className="space-y-[16px]">
               {/* Messages */}
@@ -214,7 +217,7 @@ export default function SignupPage() {
               {/* Step 1: Personal Info */}
               {step === 1 && (
                 <div className="space-y-[16px]">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                     <TextInput
                       label="First Name"
                       id="first_name"
@@ -240,7 +243,7 @@ export default function SignupPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                     <TextInput
                       label="Date of Birth"
                       id="date_of_birth"
@@ -276,6 +279,16 @@ export default function SignupPage() {
                     disabled={isLoading}
                     error={errors['email']}
                   />
+
+                  {/* Problem 2 - Compact yellow-sticker warning inline under email */}
+                  <div className="bg-yellow-sticker text-ink border border-[#000000] p-[8px] flex flex-col gap-[4px] select-none">
+                    <span className="font-helvetica text-button uppercase font-bold">
+                      ★ Domain Restriction Notice
+                    </span>
+                    <span className="font-times-new-roman text-body-sm">
+                      Your email must be a valid Gmail address (@gmail.com) or match the college domain suffix (@college.edu).
+                    </span>
+                  </div>
 
                   <TextInput
                     label="Present Address"
@@ -330,7 +343,7 @@ export default function SignupPage() {
                     error={errors['enrollment_number']}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
                     <TextInput
                       label="10th Percentage"
                       id="tenth_result"
@@ -383,7 +396,7 @@ export default function SignupPage() {
                     Leave blank if not yet completed.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-[16px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
                     <TextInput
                       label="Semester 1 SGPA"
                       id="sem1_sgpa"
@@ -491,7 +504,7 @@ export default function SignupPage() {
                   />
 
                   <div className="space-y-[8px] pt-[8px]">
-                    <label className="block font-helvetica text-ui-label text-ink select-none font-bold">
+                    <label className="block font-helvetica text-ui-label text-canvas select-none font-bold">
                       Upload Resume
                     </label>
                     <div className="border border-dashed border-[#000000] p-[24px] text-center bg-[#f9f9f9] relative">
@@ -507,7 +520,7 @@ export default function SignupPage() {
               )}
 
               {/* Navigation Actions */}
-              <div className="flex justify-between items-center pt-[16px] border-t border-[#000000] mt-[8px]">
+              <div className="flex justify-between items-center pt-[16px] border-t border-canvas mt-[8px]">
                 {step > 1 ? (
                   <ButtonSecondary type="button" onClick={handlePrev} disabled={isLoading}>
                     PREVIOUS
@@ -517,11 +530,24 @@ export default function SignupPage() {
                 )}
 
                 {step < 4 ? (
-                  <ButtonPrimary type="button" onClick={handleNext} disabled={isLoading}>
+                  <ButtonPrimary
+                    type="button"
+                    onClick={handleNext}
+                    disabled={isLoading}
+                    bgClassName="bg-yellow-sticker"
+                    textClassName="text-ink"
+                    borderClassName="border-yellow-sticker"
+                  >
                     NEXT STEP →
                   </ButtonPrimary>
                 ) : (
-                  <ButtonPrimary type="submit" disabled={isLoading}>
+                  <ButtonPrimary
+                    type="submit"
+                    disabled={isLoading}
+                    bgClassName="bg-yellow-sticker"
+                    textClassName="text-ink"
+                    borderClassName="border-yellow-sticker"
+                  >
                     {isLoading ? 'SUBMITTING REGISTRATION...' : 'REGISTER STUDENT PROFILE'}
                   </ButtonPrimary>
                 )}
@@ -529,7 +555,7 @@ export default function SignupPage() {
             </form>
 
             {/* Login Link */}
-            <div className="mt-[20px] pt-[12px] border-t border-[#000000] text-center text-body-sm">
+            <div className="mt-[20px] pt-[12px] border-t border-canvas text-center text-body-sm">
               Already have an account?{' '}
               <TextLink href="/login">
                 Sign in to system
@@ -539,8 +565,8 @@ export default function SignupPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] p-[16px] text-center font-times-new-roman text-body-sm select-none">
-        © 1996 Placement Buddy Corporation. Secure student registrar system.
+      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
+        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
       </footer>
     </div>
   );
