@@ -230,20 +230,26 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] text-[#000000]">
       <TopBanner>
         STUDENT PROFILE BUILDER // SYSTEM REGISTRAR WIZARD -- STATUS: {completionPct}% COMPLETE
       </TopBanner>
 
       <main className="flex-1 p-[24px] max-w-3xl mx-auto w-full space-y-[24px]">
         {/* Navigation & Progress */}
-        <div className="flex items-center justify-between border-b border-[#000000] pb-[12px]">
+        <div className="flex items-center justify-between border-b-2 border-frame-ink pb-[16px]">
           <Link href="/dashboard">
-            <ButtonSecondary>
+            <ButtonSecondary
+              className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+              bgClassName="bg-canvas hover:bg-neutral-50"
+              textClassName="text-ink font-bold uppercase tracking-wider"
+              borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+              roundedClassName="rounded-none"
+            >
               ← BACK TO DASHBOARD
             </ButtonSecondary>
           </Link>
-          <div className="text-right font-times-new-roman text-body font-bold">
+          <div className="text-right font-times-new-roman text-body font-bold text-ink bg-white border-2 border-frame-ink px-[12px] py-[6px] shadow-[2px_2px_0px_#000000]">
             COMPLETION: {completionPct}%
           </div>
         </div>
@@ -596,9 +602,18 @@ export default function ProfilePage() {
             )}
 
             {/* Actions Footer */}
-            <div className="flex justify-between items-center pt-[16px] border-t border-[#000000] mt-[8px]">
+            <div className="flex justify-between items-center pt-[16px] border-t-2 border-frame-ink mt-[12px]">
               {step > 1 ? (
-                <ButtonSecondary type="button" onClick={handlePrev} disabled={isLoading}>
+                <ButtonSecondary
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={isLoading}
+                  bgClassName="bg-canvas hover:bg-neutral-50"
+                  textClassName="text-ink font-bold uppercase"
+                  borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                  className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                  roundedClassName="rounded-none"
+                >
                   PREVIOUS
                 </ButtonSecondary>
               ) : (
@@ -606,11 +621,28 @@ export default function ProfilePage() {
               )}
 
               {step < 4 ? (
-                <ButtonPrimary type="button" onClick={handleNext} disabled={isLoading}>
+                <ButtonPrimary
+                  type="button"
+                  onClick={handleNext}
+                  disabled={isLoading}
+                  bgClassName="bg-yellow-sticker"
+                  textClassName="text-ink font-bold uppercase"
+                  borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                  className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                  roundedClassName="rounded-none"
+                >
                   NEXT STEP →
                 </ButtonPrimary>
               ) : (
-                <ButtonPrimary type="submit" disabled={isLoading || isUploading}>
+                <ButtonPrimary
+                  type="submit"
+                  disabled={isLoading || isUploading}
+                  bgClassName="bg-yellow-sticker"
+                  textClassName="text-ink font-bold uppercase"
+                  borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                  className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                  roundedClassName="rounded-none"
+                >
                   {isLoading ? 'SAVING PROFILE...' : 'SAVE ENTIRE PROFILE'}
                 </ButtonPrimary>
               )}

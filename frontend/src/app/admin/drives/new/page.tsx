@@ -499,8 +499,8 @@ function AdminNewDrivePageContent() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold select-none">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-[#fcc20f] font-helvetica font-bold shadow-[6px_6px_0px_#000000] uppercase tracking-wider animate-pulse select-none">
           LOADING TPO REGISTRATION PORTAL... PLEASE WAIT
         </div>
       </div>
@@ -510,20 +510,26 @@ function AdminNewDrivePageContent() {
   if (!isAdmin) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] text-[#000000]">
       <TopBanner>
         TPO CONSOLE // REGISTER NEW RECRUITMENT DRIVE v1.0
       </TopBanner>
 
       <main className="flex-1 p-[24px] max-w-3xl mx-auto w-full space-y-[24px]">
         {/* Navigation */}
-        <div className="border-b border-[#000000] pb-[12px] flex items-center justify-between">
+        <div className="border-b-2 border-frame-ink pb-[16px] flex items-center justify-between">
           <Link href="/admin/drives">
-            <ButtonSecondary>
+            <ButtonSecondary
+              className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+              bgClassName="bg-canvas hover:bg-neutral-50"
+              textClassName="text-ink font-bold uppercase tracking-wider"
+              borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+              roundedClassName="rounded-none"
+            >
               ← BACK TO DRIVES LIST
             </ButtonSecondary>
           </Link>
-          <div className="font-helvetica text-ui-label uppercase font-bold text-gray-500">
+          <div className="font-helvetica text-ui-label uppercase font-bold text-ink bg-white border-2 border-frame-ink px-[12px] py-[6px] shadow-[2px_2px_0px_#000000]">
             WIZARD STEP: {step} OF 2
           </div>
         </div>
@@ -669,7 +675,15 @@ function AdminNewDrivePageContent() {
                   </div>
 
                   <div className="flex justify-end pt-[4px]">
-                    <ButtonSecondary type="button" onClick={handleAddCustomField}>
+                    <ButtonSecondary
+                      type="button"
+                      onClick={handleAddCustomField}
+                      className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                      bgClassName="bg-canvas hover:bg-neutral-50"
+                      textClassName="text-ink font-bold uppercase tracking-wider text-button"
+                      borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
+                      roundedClassName="rounded-none"
+                    >
                       + ADD FIELD TO REGISTRATION
                     </ButtonSecondary>
                   </div>
@@ -686,7 +700,7 @@ function AdminNewDrivePageContent() {
                     ) : (
                       <div className="space-y-[6px]">
                         {customFields.map((f) => (
-                          <div key={f.key} className="flex justify-between items-center border border-[#000000] p-[8px] bg-tint-sky text-body-sm font-times-new-roman">
+                          <div key={f.key} className="flex justify-between items-center border-2 border-frame-ink p-[12px] bg-tint-sky text-body-sm font-times-new-roman shadow-[3px_3px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all">
                             <div>
                               <span className="font-bold">{f.label}</span> (Key: <code>{f.key}</code>) | Type: {f.type} | {f.required ? 'Required' : 'Optional'}
                             </div>
@@ -706,8 +720,16 @@ function AdminNewDrivePageContent() {
               )}
 
               {/* Action Bar */}
-              <div className="pt-[16px] border-t border-[#000000] flex justify-end">
-                <ButtonPrimary type="submit" disabled={isSubmitting}>
+              <div className="pt-[16px] border-t-2 border-frame-ink flex justify-end">
+                <ButtonPrimary
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                  bgClassName="bg-yellow-sticker"
+                  textClassName="text-ink font-bold uppercase tracking-wider"
+                  borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                  roundedClassName="rounded-none"
+                >
                   {isSubmitting
                     ? 'SAVING BASICS...'
                     : sourceType === 'google_form'
@@ -1057,11 +1079,26 @@ function AdminNewDrivePageContent() {
                     })}
                   </div>
 
-                  <div className="flex justify-end gap-[12px] pt-[12px] border-t border-[#000000]">
-                    <ButtonSecondary onClick={() => setStep(1)}>
+                  <div className="flex justify-end gap-[12px] pt-[16px] border-t-2 border-frame-ink mt-[12px]">
+                    <ButtonSecondary
+                      onClick={() => setStep(1)}
+                      className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                      bgClassName="bg-canvas hover:bg-neutral-50"
+                      textClassName="text-ink font-bold uppercase tracking-wider"
+                      borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                      roundedClassName="rounded-none"
+                    >
                       ← MODIFY BASICS
                     </ButtonSecondary>
-                    <ButtonPrimary onClick={handleSaveMapping} disabled={isSavingMapping}>
+                    <ButtonPrimary
+                      onClick={handleSaveMapping}
+                      disabled={isSavingMapping}
+                      className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                      bgClassName="bg-yellow-sticker"
+                      textClassName="text-ink font-bold uppercase tracking-wider"
+                      borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                      roundedClassName="rounded-none"
+                    >
                       {isSavingMapping ? 'SAVING MAPPING...' : 'SAVE MAPPING'}
                     </ButtonPrimary>
                   </div>
@@ -1070,15 +1107,23 @@ function AdminNewDrivePageContent() {
 
               {/* Publish Drive Step */}
               {mappingSaved && !isParsing && (
-                <div className="border border-black p-[16px] bg-tint-sage space-y-[12px] mt-[16px]">
-                  <h4 className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
+                <div className="border-2 border-black p-[16px] bg-tint-sage space-y-[12px] mt-[20px] shadow-[4px_4px_0px_#000000]">
+                  <h4 className="font-helvetica text-heading-3 uppercase font-bold border-b-2 border-[#000000] pb-[8px]">
                     PUBLISH RECRUITMENT REGISTER
                   </h4>
-                  <p className="font-times-new-roman text-body-sm">
+                  <p className="font-times-new-roman text-body-sm leading-relaxed text-ink/90">
                     The mapping has been saved to the database. Publishing will set the drive&apos;s status to <strong>OPEN</strong>, making it active for registration.
                   </p>
-                  <div className="flex justify-end">
-                    <ButtonPrimary onClick={handlePublishDrive} disabled={isPublishing}>
+                  <div className="flex justify-end pt-[4px]">
+                    <ButtonPrimary
+                      onClick={handlePublishDrive}
+                      disabled={isPublishing}
+                      className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                      bgClassName="bg-[#e91d2a] hover:bg-[#ff3b47]"
+                      textClassName="text-white font-bold uppercase tracking-wider"
+                      borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                      roundedClassName="rounded-none"
+                    >
                       {isPublishing ? 'PUBLISHING...' : '★ PUBLISH RECRUITMENT DRIVE'}
                     </ButtonPrimary>
                   </div>
@@ -1099,8 +1144,8 @@ function AdminNewDrivePageContent() {
 export default function AdminNewDrivePage() {
   return (
     <Suspense fallback={
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-tint-periwinkle">
-        <div className="border border-[#000000] p-[24px] bg-tint-peach font-helvetica font-bold">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-tint-sage font-helvetica font-bold text-ink rounded-none shadow-[6px_6px_0px_#000000]">
           LOADING DRIVE CREATION WIZARD...
         </div>
       </div>

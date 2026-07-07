@@ -113,8 +113,8 @@ function SettingsContent() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold animate-pulse">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-[#fcc20f] font-helvetica font-bold shadow-[6px_6px_0px_#000000] uppercase tracking-wider animate-pulse">
           LOADING ADMIN SETTINGS... PLEASE WAIT
         </div>
       </div>
@@ -124,16 +124,22 @@ function SettingsContent() {
   if (!isAdmin) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] text-[#000000]">
       <TopBanner>
         ADMINISTRATION PORTAL // SYSTEM SETTINGS
       </TopBanner>
 
       <main className="flex-1 p-[24px] max-w-2xl mx-auto w-full space-y-[24px]">
         {/* Navigation */}
-        <div className="border-b border-[#000000] pb-[12px] flex justify-between items-center">
+        <div className="border-b-2 border-frame-ink pb-[16px] flex justify-between items-center">
           <Link href="/admin/drives">
-            <ButtonSecondary>
+            <ButtonSecondary
+              className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+              bgClassName="bg-canvas hover:bg-neutral-50"
+              textClassName="text-ink font-bold uppercase tracking-wider"
+              borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+              roundedClassName="rounded-none"
+            >
               ← BACK TO DRIVES LIST
             </ButtonSecondary>
           </Link>
@@ -146,12 +152,12 @@ function SettingsContent() {
               Google OAuth integration allows the Placement Buddy server to securely fetch metadata and question formats directly from the Google Forms API. This enables automatic field mapping for <strong>login-restricted</strong> or <strong>organization-internal</strong> recruitment forms.
             </p>
 
-            <div className="border border-[#000000] p-[16px] bg-gray-50 flex flex-col gap-[12px]">
+            <div className="border-2 border-[#000000] p-[16px] bg-white flex flex-col gap-[12px] shadow-[3px_3px_0px_#000000]">
               <div className="flex items-center justify-between">
                 <span className="font-helvetica font-bold text-caption uppercase text-ink">
                   Integration Status:
                 </span>
-                <span className={`font-helvetica text-ui-label font-bold px-[8px] py-[4px] border border-black uppercase select-none ${
+                <span className={`font-helvetica text-ui-label font-bold px-[10px] py-[6px] border-2 border-black uppercase select-none shadow-[2px_2px_0px_#000000] ${
                   googleConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
                   {googleConnected ? '★ CONNECTED' : '✗ NOT CONNECTED'}
@@ -159,19 +165,19 @@ function SettingsContent() {
               </div>
 
               {googleConnected && tokenExpiry && (
-                <div className="text-body-sm font-times-new-roman pt-[4px] border-t border-dashed border-gray-300">
+                <div className="text-body-sm font-times-new-roman pt-[8px] border-t-2 border-dashed border-gray-300 text-ink/75">
                   <span className="font-bold">Token Expiry / Refresh Registry:</span>{' '}
                   {new Date(tokenExpiry).toLocaleString()}
                 </div>
               )}
             </div>
 
-            <div className="pt-[8px] flex flex-col gap-[12px]">
+            <div className="pt-[12px] flex flex-col gap-[12px]">
               {googleConnected ? (
                 <button
                   onClick={handleDisconnect}
                   disabled={isProcessing}
-                  className="w-full font-helvetica text-ui-label font-bold px-[16px] py-[12px] border border-black uppercase cursor-pointer select-none transition-colors bg-red-100 hover:bg-red-200 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full font-helvetica text-ui-label font-bold px-[16px] py-[12px] border-2 border-frame-ink uppercase cursor-pointer select-none transition-all bg-[#ffebe8] hover:bg-[#ffd5cf] text-[#e91d2a] disabled:opacity-50 disabled:cursor-not-allowed shadow-[3px_3px_0px_#000000] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
                 >
                   {isProcessing ? 'PROCESSING...' : 'DISCONNECT GOOGLE ACCOUNT'}
                 </button>
@@ -179,7 +185,11 @@ function SettingsContent() {
                 <ButtonPrimary
                   onClick={handleConnect}
                   disabled={isProcessing}
-                  className="w-full text-center"
+                  className="w-full text-center transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                  bgClassName="bg-yellow-sticker"
+                  textClassName="text-ink font-bold uppercase tracking-wider"
+                  borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                  roundedClassName="rounded-none"
                 >
                   {isProcessing ? 'GENERATING CONSENT LINK...' : 'CONNECT GOOGLE ACCOUNT'}
                 </ButtonPrimary>
@@ -189,7 +199,7 @@ function SettingsContent() {
         </RibbonCard>
 
         {/* Informational help card */}
-        <div className="border border-dashed border-[#000000] p-[16px] bg-[#fffde8] text-body-sm font-times-new-roman space-y-[8px]">
+        <div className="border-2 border-dashed border-frame-ink p-[16px] bg-[#fffde8] text-body-sm font-times-new-roman space-y-[8px] shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000] hover:-translate-x-[1px] hover:-translate-y-[1px]">
           <h4 className="font-bold uppercase text-caption">ⓘ Security &amp; Permissions Disclaimer</h4>
           <p className="leading-relaxed">
             Placement Buddy requests the <strong>forms.body.readonly</strong> scope. This permission is read-only and restricted exclusively to retrieving form questions. It does not allow reading form responses or modifying form structures. The refresh token is encrypted at rest using AES-256-GCM.
@@ -207,8 +217,8 @@ function SettingsContent() {
 export default function AdminSettingsPage() {
   return (
     <Suspense fallback={
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-tint-sage font-helvetica font-bold text-ink rounded-none shadow-[6px_6px_0px_#000000]">
           LOADING SETTINGS GATEWAY...
         </div>
       </div>

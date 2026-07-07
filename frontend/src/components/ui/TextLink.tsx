@@ -5,13 +5,14 @@ interface TextLinkProps {
   href: string;
   children: React.ReactNode;
   className?: string;
+  colorClassName?: string;
 }
 
-export function TextLink({ href, children, className = '' }: TextLinkProps) {
+export function TextLink({ href, children, className = '', colorClassName = 'text-[#0000ee]' }: TextLinkProps) {
   return (
     <Link
       href={href}
-      className={`text-[#0000ee] underline font-times-new-roman text-body relative inline-block after:content-[''] after:absolute after:inset-[-10px] after:block ${className}`}
+      className={`${colorClassName} underline font-times-new-roman text-body relative inline-block after:content-[''] after:absolute after:inset-[-10px] after:block ${className}`}
     >
       {children}
     </Link>

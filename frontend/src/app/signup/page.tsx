@@ -177,17 +177,19 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-tint-periwinkle">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
       <TopBanner>
         STUDENT SIGNUP REGISTRATION SYSTEM v1.0 // ENTERPRISE GATEWAY
       </TopBanner>
 
-      <div className="bg-tint-salmon text-ink font-arial-black text-display uppercase font-black px-[16px] py-[24px] border-b border-frame-ink text-center select-none">
-        JOIN THE PLACEMENT DRIVE
+      <div className="relative overflow-hidden bg-tint-salmon text-ink font-arial-black text-display uppercase font-black px-[16px] py-[28px] border-b-2 border-frame-ink text-center select-none">
+        {/* Retro diagonal warning/tape stripe pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.08] bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000000_10px,#000000_20px)]" />
+        <span className="relative z-10 tracking-wider drop-shadow-[1.5px_1.5px_0px_rgba(255,255,255,0.8)]">JOIN THE PLACEMENT DRIVE</span>
       </div>
 
       <main className="flex-1 flex flex-col items-center justify-center p-[24px]">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-2xl my-[20px] transition-transform duration-300 hover:scale-[1.005]">
           <AuthFormCard
             title={`STUDENT REGISTRATION FORM -- STEP ${step} OF 4`}
             accentBgClassName={
@@ -196,20 +198,21 @@ export default function SignupPage() {
               step === 3 ? 'bg-tint-sky' :
               'bg-tint-peach'
             }
-            bgClassName="bg-frame-ink"
-            textClassName="text-canvas"
+            bgClassName="bg-canvas"
+            textClassName="text-ink"
+            titleClassName="text-ink font-helvetica text-heading-2 font-bold uppercase tracking-wider"
           >
 
-            <form onSubmit={handleSubmit} className="space-y-[16px]">
+            <form onSubmit={handleSubmit} className="space-y-[16px] retro-auth-form">
               {/* Messages */}
               {generalError && (
-                <div className="border border-[#e91d2a] bg-[#e91d2a]/10 p-[12px] text-body-sm text-[#e91d2a] font-bold">
+                <div className="border-2 border-[#e91d2a] bg-[#e91d2a]/10 p-[12px] text-body-sm text-[#e91d2a] font-bold rounded-none shadow-[2px_2px_0px_rgba(233,29,42,0.15)]">
                   {generalError}
                 </div>
               )}
 
               {successMessage && (
-                <div className="border border-[#8e8a25] bg-[#b3bd95]/20 p-[12px] text-body-sm text-[#8e8a25] font-bold">
+                <div className="border-2 border-frame-ink bg-tint-sage/20 p-[12px] text-body-sm text-ink font-bold rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.1)]">
                   {successMessage}
                 </div>
               )}
@@ -280,13 +283,13 @@ export default function SignupPage() {
                     error={errors['email']}
                   />
 
-                  {/* Problem 2 - Compact yellow-sticker warning inline under email */}
-                  <div className="bg-yellow-sticker text-ink border border-[#000000] p-[8px] flex flex-col gap-[4px] select-none">
-                    <span className="font-helvetica text-button uppercase font-bold">
+                  {/* Domain Restriction Notice */}
+                  <div className="bg-yellow-sticker/20 text-ink border-2 border-frame-ink p-[12px] flex flex-col gap-[4px] select-none rounded-none shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000] hover:-translate-x-[1px] hover:-translate-y-[1px]">
+                    <span className="font-helvetica text-button uppercase font-bold text-[#b45309] flex items-center gap-[6px]">
                       ★ Domain Restriction Notice
                     </span>
-                    <span className="font-times-new-roman text-body-sm">
-                      Your email must be a valid Gmail address (@gmail.com) or match the college domain suffix (@college.edu).
+                    <span className="font-times-new-roman text-body-sm leading-relaxed">
+                      Your email must be a valid Gmail address (<strong className="underline">@gmail.com</strong>) or match the college domain suffix (<strong className="underline">@college.edu</strong>).
                     </span>
                   </div>
 
@@ -389,10 +392,10 @@ export default function SignupPage() {
               {/* Step 3: Semester SGPA */}
               {step === 3 && (
                 <div className="space-y-[16px]">
-                  <h4 className="font-helvetica text-heading-3 uppercase font-bold text-center mb-[8px]">
+                  <h4 className="font-helvetica text-heading-3 uppercase font-bold text-center mb-[8px] text-ink">
                     Semester-wise SGPA
                   </h4>
-                  <p className="font-times-new-roman text-body-sm text-center text-gray-500 mb-[16px]">
+                  <p className="font-times-new-roman text-body-sm text-center text-ink/75 mb-[16px]">
                     Leave blank if not yet completed.
                   </p>
 
@@ -504,14 +507,14 @@ export default function SignupPage() {
                   />
 
                   <div className="space-y-[8px] pt-[8px]">
-                    <label className="block font-helvetica text-ui-label text-canvas select-none font-bold">
+                    <label className="block font-helvetica text-ui-label text-ink select-none font-bold uppercase">
                       Upload Resume
                     </label>
-                    <div className="border border-dashed border-[#000000] p-[24px] text-center bg-[#f9f9f9] relative">
-                      <p className="font-helvetica text-button font-bold text-gray-500">
+                    <div className="border border-dashed border-frame-ink p-[24px] text-center bg-canvas relative rounded-none">
+                      <p className="font-helvetica text-button font-bold text-ink/50 uppercase">
                         RESUME UPLOAD WILL BE AVAILABLE
                       </p>
-                      <p className="font-times-new-roman text-body-sm text-[#000000] mt-[4px]">
+                      <p className="font-times-new-roman text-body-sm text-ink mt-[4px]">
                         Please complete registration first. You will be able to upload your PDF resume from your Profile dashboard after logging in.
                       </p>
                     </div>
@@ -520,9 +523,18 @@ export default function SignupPage() {
               )}
 
               {/* Navigation Actions */}
-              <div className="flex justify-between items-center pt-[16px] border-t border-canvas mt-[8px]">
+              <div className="flex justify-between items-center pt-[16px] border-t border-frame-ink mt-[8px]">
                 {step > 1 ? (
-                  <ButtonSecondary type="button" onClick={handlePrev} disabled={isLoading}>
+                  <ButtonSecondary
+                    type="button"
+                    onClick={handlePrev}
+                    disabled={isLoading}
+                    bgClassName="bg-canvas hover:bg-neutral-50"
+                    textClassName="text-ink font-bold uppercase"
+                    borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                    className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                    roundedClassName="rounded-none"
+                  >
                     PREVIOUS
                   </ButtonSecondary>
                 ) : (
@@ -535,8 +547,10 @@ export default function SignupPage() {
                     onClick={handleNext}
                     disabled={isLoading}
                     bgClassName="bg-yellow-sticker"
-                    textClassName="text-ink"
-                    borderClassName="border-yellow-sticker"
+                    textClassName="text-ink font-bold uppercase"
+                    borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                    className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                    roundedClassName="rounded-none"
                   >
                     NEXT STEP →
                   </ButtonPrimary>
@@ -545,8 +559,10 @@ export default function SignupPage() {
                     type="submit"
                     disabled={isLoading}
                     bgClassName="bg-yellow-sticker"
-                    textClassName="text-ink"
-                    borderClassName="border-yellow-sticker"
+                    textClassName="text-ink font-bold uppercase"
+                    borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                    className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                    roundedClassName="rounded-none"
                   >
                     {isLoading ? 'SUBMITTING REGISTRATION...' : 'REGISTER STUDENT PROFILE'}
                   </ButtonPrimary>
@@ -555,9 +571,13 @@ export default function SignupPage() {
             </form>
 
             {/* Login Link */}
-            <div className="mt-[20px] pt-[12px] border-t border-canvas text-center text-body-sm">
+            <div className="mt-[20px] pt-[12px] border-t border-frame-ink text-center text-body-sm text-ink">
               Already have an account?{' '}
-              <TextLink href="/login">
+              <TextLink
+                href="/login"
+                colorClassName="text-link"
+                className="font-bold hover:underline"
+              >
                 Sign in to system
               </TextLink>
             </div>

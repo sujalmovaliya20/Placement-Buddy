@@ -259,8 +259,8 @@ export default function AdminDrivesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold select-none">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-[#fcc20f] font-helvetica font-bold shadow-[6px_6px_0px_#000000] uppercase tracking-wider animate-pulse select-none">
           LOADING TPO ADMINISTRATIVE DATABASE... PLEASE WAIT
         </div>
       </div>
@@ -286,30 +286,43 @@ export default function AdminDrivesPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] text-[#000000]">
       <TopBanner>
         TPO CONSOLE // PLACEMENT OFFICE DATABASE ADMINISTRATOR -- ACTIVE SESSION
       </TopBanner>
 
       <main className="flex-1 p-[24px] space-y-[24px] max-w-7xl mx-auto w-full">
         {/* Navigation & Header Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#000000] pb-[12px] gap-[12px]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-frame-ink pb-[16px] gap-[12px]">
           <div>
-            <h1 className="font-arial-black text-heading-1 uppercase leading-none">
+            <h1 className="font-arial-black text-heading-1 uppercase leading-none tracking-wide text-ink">
               Drives Administrator
             </h1>
-            <p className="font-times-new-roman text-body mt-[4px]">
+            <p className="font-times-new-roman text-body mt-[4px] text-ink/80">
               Configure placement registers, manage student applications, and push channel updates.
             </p>
           </div>
 
           <div className="flex gap-[8px] w-full sm:w-auto">
             <Link href="/admin/drives/new">
-              <ButtonPrimary>
+              <ButtonPrimary
+                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                bgClassName="bg-yellow-sticker"
+                textClassName="text-ink font-bold uppercase tracking-wider"
+                borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                roundedClassName="rounded-none"
+              >
                 ★ CREATE NEW DRIVE
               </ButtonPrimary>
             </Link>
-            <ButtonSecondary onClick={handleLogout}>
+            <ButtonSecondary
+              onClick={handleLogout}
+              className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+              bgClassName="bg-canvas hover:bg-neutral-50"
+              textClassName="text-ink font-bold uppercase tracking-wider"
+              borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+              roundedClassName="rounded-none"
+            >
               LOG OUT
             </ButtonSecondary>
           </div>

@@ -17,9 +17,8 @@ export const TextInput = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <input
           ref={ref}
-          className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none focus:ring-1 focus:ring-[#000000] w-full ${
-            error ? 'border-[#e91d2a] ring-1 ring-[#e91d2a]' : ''
-          } ${className}`}
+          className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none focus:ring-1 focus:ring-[#000000] w-full ${error ? 'border-[#e91d2a] ring-1 ring-[#e91d2a]' : ''
+            } ${className}`}
           {...props}
         />
         {error && (

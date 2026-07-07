@@ -116,6 +116,7 @@ html {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -130,17 +131,52 @@ html {
   .text-display {
     font-size: 24px;
   }
+
   @media (min-width: 768px) {
     .text-display {
       font-size: 36px;
     }
   }
+
   .text-heading-1 {
     font-size: 18px;
   }
+
   @media (min-width: 768px) {
     .text-heading-1 {
       font-size: 24px;
     }
   }
+}
+
+/* ─── Retro Dell 1996 Auth Form Styling ─── */
+.retro-auth-form input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  padding: 10px 12px !important;
+  font-family: 'Times New Roman', 'Times', serif !important;
+  font-size: 14px !important;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.retro-auth-form input:focus {
+  outline: none !important;
+  background-color: #fdfdfa !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  transform: translate(-2px, -2px) !important;
+}
+
+.retro-auth-form input::placeholder {
+  color: #a1a1aa !important;
+}
+
+.retro-auth-form label {
+  color: #000000 !important;
+  font-family: 'Helvetica', 'Arial', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.075em !important;
 }

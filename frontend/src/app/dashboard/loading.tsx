@@ -2,11 +2,11 @@ import { TopBanner } from '@/components/ui';
 
 export default function DashboardLoading() {
   return (
-    <div className="flex-1 flex flex-col bg-tint-periwinkle font-helvetica">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] font-helvetica">
       <TopBanner>STUDENT PORTAL // ACCESSING REGISTRATION REGISTRY SYSTEM...</TopBanner>
       <main className="flex-1 flex flex-col items-center justify-center p-[24px]">
-        <div className="w-full max-w-xl border-4 border-black bg-white p-[24px] shadow-[8px_8px_0px_0px_#000]">
-          <div className="bg-yellow-sticker border-2 border-black p-[12px] text-center font-arial-black text-[18px] uppercase mb-[20px] select-none">
+        <div className="w-full max-w-xl border-2 border-black bg-white p-[32px] shadow-[8px_8px_0px_0px_#000]">
+          <div className="bg-yellow-sticker border-2 border-black p-[12px] text-center font-arial-black text-[18px] uppercase mb-[24px] select-none shadow-[3px_3px_0px_#000000]">
             ★ LOADING SYSTEM RECORDS ★
           </div>
           

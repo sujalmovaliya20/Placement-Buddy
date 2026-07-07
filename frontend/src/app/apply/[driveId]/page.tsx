@@ -296,8 +296,8 @@ export default function ApplyPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#ffffff]">
-        <div className="border border-[#000000] p-[24px] bg-[#fcc20f] font-helvetica font-bold">
+      <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+        <div className="border-2 border-frame-ink p-[24px] bg-[#fcc20f] font-helvetica font-bold shadow-[6px_6px_0px_#000000] uppercase tracking-wider animate-pulse">
           LOADING APPLICATION DATA... PLEASE WAIT
         </div>
       </div>
@@ -311,16 +311,22 @@ export default function ApplyPage() {
   const isGoogleForm = drive.source_type === 'google_form';
 
   return (
-    <div className="flex-1 flex flex-col bg-[#ffffff] text-[#000000]">
+    <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px] text-[#000000]">
       <TopBanner>
         RECRUITMENT APPLICATION GATEWAY // DRIVE REF: {driveId.toUpperCase()}
       </TopBanner>
 
       <main className="flex-1 p-[24px] max-w-2xl mx-auto w-full space-y-[24px]">
         {/* Navigation */}
-        <div className="border-b border-[#000000] pb-[12px]">
+        <div className="border-b-2 border-frame-ink pb-[16px]">
           <Link href="/dashboard">
-            <ButtonSecondary>
+            <ButtonSecondary
+              className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+              bgClassName="bg-canvas hover:bg-neutral-50"
+              textClassName="text-ink font-bold uppercase tracking-wider"
+              borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+              roundedClassName="rounded-none"
+            >
               ← BACK TO DASHBOARD
             </ButtonSecondary>
           </Link>
@@ -328,9 +334,9 @@ export default function ApplyPage() {
 
         {/* Header Ribbon Card */}
         <RibbonCard title="PLACEMENT DRIVE SPECIFICATION" variant="periwinkle">
-          <div className="space-y-[8px]">
+          <div className="space-y-[12px]">
             <div>
-              <span className="bg-[#fcc20f] text-[#000000] border border-[#000000] font-helvetica text-ui-label font-bold px-[6px] py-[2px] uppercase select-none">
+              <span className="bg-[#fcc20f] text-[#000000] border-2 border-[#000000] font-helvetica text-ui-label font-bold px-[10px] py-[4px] uppercase select-none shadow-[2px_2px_0px_#000000]">
                 {isGoogleForm ? 'GOOGLE FORM INTERFACE' : 'NATIVE PLATFORM REGISTRY'}
               </span>
             </div>
@@ -340,13 +346,13 @@ export default function ApplyPage() {
             <p className="font-times-new-roman text-body font-bold text-ink">
               Job Role: {drive.role}
             </p>
-            <div className="border-t border-[#000000] pt-[8px] mt-[8px] grid grid-cols-2 gap-[16px] text-body-sm font-times-new-roman">
+            <div className="border-t-2 border-[#000000] pt-[12px] mt-[8px] grid grid-cols-2 gap-[16px] text-body-sm font-times-new-roman">
               <div>
-                <span className="font-bold block">DEADLINE DATE:</span>
-                {new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}
+                <span className="font-bold block uppercase text-ink/70">DEADLINE DATE:</span>
+                <span className="font-semibold">{new Date(drive.deadline).toLocaleDateString()}</span> at {new Date(drive.deadline).toLocaleTimeString()}
               </div>
               <div>
-                <span className="font-bold block">ELIGIBILITY STATUS:</span>
+                <span className="font-bold block uppercase text-ink/70">ELIGIBILITY STATUS:</span>
                 <span className="text-[#8e8a25] font-bold">★ ELIGIBLE TO PARTICIPATE</span>
               </div>
             </div>
@@ -357,7 +363,7 @@ export default function ApplyPage() {
         {/* State Banner: Deadline Passed or Drive Closed */}
         {(isExpired || !isOpen) ? (
           alreadyApplied ? (
-            <div className="border border-[#000000] bg-tint-sage p-[16px] flex flex-col gap-[8px]">
+            <div className="border-2 border-frame-ink bg-tint-sage p-[16px] flex flex-col gap-[8px] shadow-[4px_4px_0px_#000000]">
               <h4 className="font-helvetica text-heading-3 uppercase font-bold">
                 ✔ APPLICATION STATUS: RECEIVED
               </h4>
@@ -366,7 +372,7 @@ export default function ApplyPage() {
               </p>
             </div>
           ) : (
-            <div className="border border-[#e91d2a] bg-red-50 p-[16px] flex flex-col gap-[8px]">
+            <div className="border-2 border-[#e91d2a] bg-red-50 p-[16px] flex flex-col gap-[8px] shadow-[4px_4px_0px_rgba(233,29,42,0.15)]">
               <h4 className="font-helvetica text-heading-3 uppercase font-bold text-[#e91d2a]">
                 Placement Register Closed
               </h4>
@@ -381,7 +387,7 @@ export default function ApplyPage() {
             <div className="space-y-[24px]">
               {/* Application Status Tracking Toggle Card */}
               <RibbonCard title="APPLICATION STATUS TRACKING" variant={alreadyApplied ? "sage" : "steel"}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[12px] bg-white border border-black gap-[12px]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[16px] bg-white border-2 border-black gap-[12px] shadow-[3px_3px_0px_#000000]">
                   <div className="space-y-[4px]">
                     <span className="font-helvetica text-caption uppercase font-bold text-gray-500">
                       Current Status
@@ -397,10 +403,10 @@ export default function ApplyPage() {
                   <button
                     onClick={handleToggleApplied}
                     disabled={isSubmitting}
-                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors w-full sm:w-auto ${
+                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[10px] border-2 border-frame-ink uppercase cursor-pointer select-none transition-all w-full sm:w-auto shadow-[3px_3px_0px_#000000] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none ${
                       alreadyApplied
-                        ? 'bg-red-100 hover:bg-red-200 text-red-700'
-                        : 'bg-green-100 hover:bg-green-200 text-green-700'
+                        ? 'bg-[#ffebe8] hover:bg-[#ffd5cf] text-[#e91d2a]'
+                        : 'bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#10b981]'
                     }`}
                   >
                     {isSubmitting
@@ -437,7 +443,11 @@ export default function ApplyPage() {
                             <ButtonSecondary
                               type="button"
                               onClick={() => handleCopyField(field.form_label, val)}
-                              className="h-[38px] min-w-[80px]"
+                              className="h-[38px] min-w-[80px] transition-all duration-150 hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                              bgClassName="bg-canvas hover:bg-neutral-50"
+                              textClassName="text-ink font-bold uppercase tracking-wider text-button"
+                              borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
+                              roundedClassName="rounded-none"
                             >
                               COPY
                             </ButtonSecondary>
@@ -446,18 +456,26 @@ export default function ApplyPage() {
                       })}
                     </div>
 
-                    <div className="flex flex-col gap-[12px] pt-[12px] border-t border-[#000000]">
+                    <div className="flex flex-col gap-[12px] pt-[16px] border-t-2 border-frame-ink">
                       <ButtonSecondary
                         type="button"
                         onClick={handleCopyAll}
-                        className="w-full"
+                        className="w-full transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                        bgClassName="bg-canvas hover:bg-neutral-50"
+                        textClassName="text-ink font-bold uppercase tracking-wider"
+                        borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                        roundedClassName="rounded-none"
                       >
                         COPY ALL VALUES
                       </ButtonSecondary>
                       <ButtonPrimary
                         onClick={handleGoogleFormSubmit}
                         disabled={isSubmitting}
-                        className="w-full"
+                        className="w-full transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                        bgClassName="bg-yellow-sticker"
+                        textClassName="text-ink font-bold uppercase tracking-wider"
+                        borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                        roundedClassName="rounded-none"
                       >
                         {isSubmitting ? 'RECORDING APPLICATION...' : 'OPEN GOOGLE FORM & APPLY'}
                       </ButtonPrimary>
@@ -465,7 +483,7 @@ export default function ApplyPage() {
                   </div>
                 </RibbonCard>
               ) : (
-                <CtaBlockRed className="text-center space-y-[16px]">
+                <CtaBlockRed className="text-center space-y-[16px] border-2 border-frame-ink shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000] hover:-translate-x-[1px] hover:-translate-y-[1px]">
                   <h3 className="font-helvetica text-heading-3 uppercase font-bold text-[#ffffff]">
                     ★ GOOGLE FORM REDIRECT ★
                   </h3>
@@ -475,12 +493,16 @@ export default function ApplyPage() {
                   <ButtonPrimary
                     onClick={handleGoogleFormSubmit}
                     disabled={isSubmitting}
-                    className="w-full mt-[8px]"
+                    className="w-full mt-[8px] transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                    bgClassName="bg-yellow-sticker"
+                    textClassName="text-ink font-bold uppercase tracking-wider"
+                    borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                    roundedClassName="rounded-none"
                   >
                     {isSubmitting ? 'RECORDING APPLICATION...' : 'CONTINUE TO GOOGLE FORM'}
                   </ButtonPrimary>
                   {prefillUrl && (
-                    <div className="p-[12px] border border-[#000000] bg-[#fcc20f] text-[#000000] text-body-sm font-times-new-roman">
+                    <div className="p-[12px] border-2 border-frame-ink bg-[#fcc20f]/20 text-[#000000] text-body-sm font-times-new-roman shadow-[3px_3px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all">
                       If the external window failed to open, please{' '}
                       <a href={prefillUrl} target="_blank" rel="noopener noreferrer" className="text-[#0000ee] underline font-bold">
                         click here to launch form directly.
@@ -496,7 +518,7 @@ export default function ApplyPage() {
               <div className="space-y-[24px]">
                 {/* Application Status Tracking Toggle Card */}
                 <RibbonCard title="APPLICATION STATUS TRACKING" variant="sage">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[12px] bg-white border border-black gap-[12px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-[16px] bg-white border-2 border-black gap-[12px] shadow-[3px_3px_0px_#000000]">
                     <div className="space-y-[4px]">
                       <span className="font-helvetica text-caption uppercase font-bold text-gray-500">
                         Current Status
@@ -512,19 +534,19 @@ export default function ApplyPage() {
                     <button
                       onClick={handleToggleApplied}
                       disabled={isSubmitting}
-                      className="font-helvetica text-ui-label font-bold px-[16px] py-[8px] border border-black uppercase cursor-pointer select-none transition-colors bg-red-100 hover:bg-red-200 text-red-700 w-full sm:w-auto"
+                      className="font-helvetica text-ui-label font-bold px-[16px] py-[10px] border-2 border-frame-ink uppercase cursor-pointer select-none transition-all bg-[#ffebe8] hover:bg-[#ffd5cf] text-[#e91d2a] w-full sm:w-auto shadow-[3px_3px_0px_#000000] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
                     >
                       {isSubmitting ? 'Processing...' : 'Withdraw Application'}
                     </button>
                   </div>
                 </RibbonCard>
 
-                <div className="border border-[#000000] bg-tint-sage p-[16px] flex flex-col gap-[8px]">
+                <div className="border-2 border-frame-ink bg-tint-sage p-[16px] flex flex-col gap-[8px] shadow-[4px_4px_0px_#000000]">
                   <h4 className="font-helvetica text-heading-3 uppercase font-bold">
                     ✔ APPLICATION STATUS: RECEIVED
                   </h4>
                   <p className="font-times-new-roman text-body">
-                    Your application for this placement drive is registered in the database. TPO coordinators are reviewing your profile.
+                    Your application for this recruitment drive is registered in the database. TPO coordinators are reviewing your profile.
                   </p>
                 </div>
               </div>
@@ -532,7 +554,7 @@ export default function ApplyPage() {
               <RibbonCard title="SUBMIT APPLICATION FORM" variant="sage">
                 <form onSubmit={handleNativeSubmit} className="space-y-[16px]">
                   {drive.custom_fields.length === 0 ? (
-                    <div className="border border-dashed border-[#000000] p-[16px] text-center text-body font-times-new-roman">
+                    <div className="border-2 border-dashed border-frame-ink p-[20px] text-center text-body font-times-new-roman bg-white shadow-[2px_2px_0px_#000000]">
                       No custom questions required. You may submit your application profile directly.
                     </div>
                   ) : (
@@ -612,11 +634,15 @@ export default function ApplyPage() {
                     })
                   )}
 
-                  <div className="pt-[12px] border-t border-[#000000]">
+                  <div className="pt-[16px] border-t-2 border-frame-ink">
                     <ButtonPrimary
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full"
+                      className="w-full transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                      bgClassName="bg-[#e91d2a] hover:bg-[#ff3b47]"
+                      textClassName="text-white font-bold uppercase tracking-wider"
+                      borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                      roundedClassName="rounded-none"
                     >
                       {isSubmitting ? 'SUBMITTING APPLICATION...' : 'SUBMIT APPLICATION'}
                     </ButtonPrimary>
