@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { signupSchema } from '@shared/index';
 import { z } from 'zod';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, AuthFormCard, TextLink } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, AuthFormCard, TextLink, Footer } from '@/components/ui';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -182,7 +182,7 @@ export default function SignupPage() {
         STUDENT SIGNUP REGISTRATION SYSTEM v1.0 // ENTERPRISE GATEWAY
       </TopBanner>
 
-      <div className="relative overflow-hidden bg-tint-salmon text-ink font-arial-black text-display uppercase font-black px-[16px] py-[28px] border-b-2 border-frame-ink text-center select-none">
+      <div className="relative overflow-hidden bg-[#fcc20f] text-ink font-arial-black text-display uppercase font-black px-[16px] py-[28px] border-b-2 border-frame-ink text-center select-none">
         {/* Retro diagonal warning/tape stripe pattern overlay */}
         <div className="absolute inset-0 opacity-[0.08] bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000000_10px,#000000_20px)]" />
         <span className="relative z-10 tracking-wider drop-shadow-[1.5px_1.5px_0px_rgba(255,255,255,0.8)]">JOIN THE PLACEMENT DRIVE</span>
@@ -192,15 +192,10 @@ export default function SignupPage() {
         <div className="w-full max-w-2xl my-[20px] transition-transform duration-300 hover:scale-[1.005]">
           <AuthFormCard
             title={`STUDENT REGISTRATION FORM -- STEP ${step} OF 4`}
-            accentBgClassName={
-              step === 1 ? 'bg-tint-sage' :
-              step === 2 ? 'bg-tint-lime' :
-              step === 3 ? 'bg-tint-sky' :
-              'bg-tint-peach'
-            }
+            accentBgClassName="bg-[#0c0c0d]"
             bgClassName="bg-canvas"
             textClassName="text-ink"
-            titleClassName="text-ink font-helvetica text-heading-2 font-bold uppercase tracking-wider"
+            titleClassName="text-[#ffffff] font-helvetica text-heading-2 font-bold uppercase tracking-wider"
           >
 
             <form onSubmit={handleSubmit} className="space-y-[16px] retro-auth-form">
@@ -585,9 +580,7 @@ export default function SignupPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

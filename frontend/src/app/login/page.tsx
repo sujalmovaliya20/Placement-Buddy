@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { loginSchema } from '@shared/index';
 import type { LoginInput } from '@shared/index';
-import { TopBanner, ButtonPrimary, TextInput, AuthFormCard, TextLink } from '@/components/ui';
+import { TopBanner, ButtonPrimary, TextInput, AuthFormCard, TextLink, Footer } from '@/components/ui';
 
 function LoginContent() {
   const router = useRouter();
@@ -76,7 +76,7 @@ function LoginContent() {
         SECURE LOGIN PORTAL // PLACEMENT BUDDY AUTHENTICATION SYSTEM
       </TopBanner>
 
-      <div className="relative overflow-hidden bg-tint-peach text-ink font-arial-black text-display uppercase font-black px-[16px] py-[28px] border-b-2 border-frame-ink text-center select-none">
+      <div className="relative overflow-hidden bg-[#fcc20f] text-ink font-arial-black text-display uppercase font-black px-[16px] py-[28px] border-b-2 border-frame-ink text-center select-none">
         {/* Retro diagonal warning/tape stripe pattern overlay */}
         <div className="absolute inset-0 opacity-[0.08] bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000000_10px,#000000_20px)]" />
         <span className="relative z-10 tracking-wider drop-shadow-[1.5px_1.5px_0px_rgba(255,255,255,0.8)]">WELCOME BACK</span>
@@ -86,10 +86,10 @@ function LoginContent() {
         <div className="w-full max-w-md my-[20px] transition-transform duration-300 hover:scale-[1.01]">
           <AuthFormCard
             title="ACCOUNT SIGN-IN"
-            accentBgClassName="bg-tint-periwinkle"
+            accentBgClassName="bg-[#0c0c0d]"
             bgClassName="bg-canvas"
             textClassName="text-ink"
-            titleClassName="text-ink font-helvetica text-heading-2 font-bold uppercase tracking-wider"
+            titleClassName="text-[#ffffff] font-helvetica text-heading-2 font-bold uppercase tracking-wider"
           >
             <form onSubmit={handleSubmit} className="space-y-[16px] retro-auth-form">
 
@@ -155,9 +155,7 @@ function LoginContent() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

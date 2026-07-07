@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard, Footer } from '@/components/ui';
 
 interface AdminAuthResponse {
   role: string;
@@ -207,9 +207,7 @@ function SettingsContent() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

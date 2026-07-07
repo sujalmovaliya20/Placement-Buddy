@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextLink, CtaBlockRed } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextLink, CtaBlockRed, Footer } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -10,7 +10,12 @@ export default function HomePage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
       <TopBanner>
-        PLACEMENT BUDDY ONLINE SYSTEM v1.0
+        <span className="font-arial-black text-heading-2 uppercase tracking-wide">
+          PLACEMENT <span className="text-[#fcc20f]">BUDDY</span>
+        </span>
+        <span className="text-body-sm font-times-new-roman text-gray-400 normal-case">
+          // ONLINE SYSTEM v1.0
+        </span>
       </TopBanner>
 
       <main className="flex-1 flex flex-col items-center justify-center p-[40px] text-center bg-transparent">
@@ -74,9 +79,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

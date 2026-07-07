@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import type { ApiErrorResponse, ApiResponse } from '@shared/types/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, Footer } from '@/components/ui';
 
 interface AdminAuthResponse {
   role: string;
@@ -996,7 +996,7 @@ function AdminNewDrivePageContent() {
                                 <select
                                   value={currentVal}
                                   onChange={(e) => setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }))}
-                                  className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[4px] rounded-none focus:outline-none w-full"
+                                  className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[6px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full shadow-[2px_2px_0px_#000000]"
                                 >
                                   <option value="">Custom — student fills manually</option>
                                   <option value="first_name">First Name (first_name)</option>
@@ -1048,7 +1048,7 @@ function AdminNewDrivePageContent() {
                             <select
                               value={currentVal}
                               onChange={(e) => setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }))}
-                              className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[8px] rounded-none focus:outline-none w-full h-[44px]"
+                              className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[8px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full h-[44px] shadow-[2px_2px_0px_#000000]"
                             >
                               <option value="">Custom — student fills manually</option>
                               <option value="first_name">First Name (first_name)</option>
@@ -1134,9 +1134,7 @@ function AdminNewDrivePageContent() {
         )}
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

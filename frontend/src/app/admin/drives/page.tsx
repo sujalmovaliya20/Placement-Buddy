@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, API_BASE_URL } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, Footer } from '@/components/ui';
 
 interface AdminAuthResponse {
   role: string;
@@ -361,7 +361,7 @@ export default function AdminDrivesPage() {
                       </div>
                       <div>
                         <span className="font-bold block">DEADLINE:</span>
-                        {new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}
+                        <span className="font-bold text-ink text-body">{new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}</span>
                       </div>
                       <div>
                         <span className="font-bold block">APPLICANTS:</span>
@@ -409,22 +409,27 @@ export default function AdminDrivesPage() {
 
                         {/* Google Form Mapping Editor */}
                         {drive.source_type === 'google_form' && (
-                          <div className="border border-[#000000] p-[16px] bg-[#ffffff] space-y-[16px]">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#000000] pb-[8px] gap-[12px]">
+                          <div className="border-2 border-frame-ink p-[20px] bg-[#ffffff] space-y-[20px] shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000]">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-frame-ink pb-[12px] gap-[12px]">
                               <h3 className="font-helvetica text-heading-3 uppercase font-bold">
                                 Google Form Mapping Configuration
                               </h3>
                               <ButtonSecondary
                                 onClick={() => handleFetchFormFields(drive._id)}
                                 disabled={isFieldsLoading}
+                                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                                bgClassName="bg-canvas hover:bg-neutral-50"
+                                textClassName="text-ink font-bold uppercase tracking-wider text-button"
+                                borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
+                                roundedClassName="rounded-none"
                               >
                                 {isFieldsLoading ? 'RETRIEVING FORM FIELDS...' : 'RETRIEVE GOOGLE FORM FIELDS'}
                               </ButtonSecondary>
                             </div>
 
-                            <p className="font-times-new-roman text-body-sm">
-                              Fetch the fields from your public Google Form. Then, map student profile fields to their corresponding Google Form entry keys (e.g. <code>entry.123456</code>).
-                            </p>
+                            <div className="border border-dashed border-frame-ink p-[12px] bg-[#fffde8] text-ink font-times-new-roman text-[15px] leading-relaxed shadow-[1px_1px_0px_#000000]">
+                              Fetch the fields from your public Google Form. Then, map student profile fields to their corresponding Google Form entry keys (e.g. <code className="bg-black/5 px-[4px] py-[2px] border border-black/10 font-mono font-bold">entry.123456</code>).
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] pt-[8px]">
                               {STUDENT_FIELDS.map((field) => {
@@ -439,7 +444,7 @@ export default function AdminDrivesPage() {
                                       <select
                                         value={currentMapping}
                                         onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="bg-[#ffffff] text-[#000000] border border-[#000000] font-helvetica text-ui-label px-[6px] py-[8px] rounded-none focus:outline-none w-full sm:w-[60%] h-[44px]"
+                                        className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[8px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full sm:w-[60%] h-[44px] shadow-[2px_2px_0px_#000000]"
                                       >
                                         <option value="">Select parsed field...</option>
                                         {fieldsList.map((f) => (
@@ -461,8 +466,15 @@ export default function AdminDrivesPage() {
                               })}
                             </div>
 
-                            <div className="pt-[8px] flex justify-end">
-                              <ButtonPrimary onClick={() => handleSaveMapping(drive._id)}>
+                            <div className="pt-[12px] border-t-2 border-frame-ink mt-[12px] flex justify-end">
+                              <ButtonPrimary
+                                onClick={() => handleSaveMapping(drive._id)}
+                                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                                bgClassName="bg-yellow-sticker"
+                                textClassName="text-ink font-bold uppercase tracking-wider"
+                                borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                                roundedClassName="rounded-none"
+                              >
                                 SAVE FIELD MAPPING CONFIGURATION
                               </ButtonPrimary>
                             </div>
@@ -619,9 +631,7 @@ export default function AdminDrivesPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

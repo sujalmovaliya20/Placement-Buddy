@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, CtaBlockRed } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, CtaBlockRed, Footer } from '@/components/ui';
 import type { Student } from '@shared/index';
 
 interface CustomField {
@@ -654,9 +654,7 @@ export default function ApplyPage() {
         )}
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

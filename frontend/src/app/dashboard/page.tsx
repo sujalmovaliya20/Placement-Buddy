@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, RibbonCard, Footer } from '@/components/ui';
 import type { Student } from '@shared/index';
 
 interface DashboardAuthResponse {
@@ -148,8 +148,8 @@ export default function DashboardPage() {
             <h1 className="font-arial-black text-heading-1 uppercase leading-none tracking-wide text-ink">
               Welcome back, {student?.first_name}!
             </h1>
-            <p className="font-times-new-roman text-body mt-[4px] text-ink/80">
-              Course: {student?.course} | CGPA: {student?.cgpa_previous_semester}
+            <p className="font-times-new-roman text-[16px] md:text-[18px] mt-[6px] text-ink/90 font-medium">
+              Course: <span className="font-bold uppercase text-ink">{student?.course}</span> | CGPA: <span className="font-bold text-ink">{student?.cgpa_previous_semester}</span>
             </p>
           </div>
 
@@ -264,9 +264,9 @@ export default function DashboardPage() {
                 >
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-[16px]">
                     <div className="space-y-[8px]">
-                      <div className="font-times-new-roman text-caption text-[#000000] flex items-center gap-[6px]">
-                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10">Deadline:</span> 
-                        <span className="font-semibold">{new Date(drive.deadline).toLocaleDateString()}</span> at {new Date(drive.deadline).toLocaleTimeString()}
+                      <div className="font-times-new-roman text-body text-[#000000] flex flex-wrap items-center gap-[6px]">
+                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10 text-caption tracking-wider">Deadline:</span> 
+                        <span className="font-bold text-ink">{new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}</span>
                       </div>
                       <div className="font-times-new-roman text-body text-[#000000] flex items-center gap-[6px]">
                         <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10">Application Mode:</span> 
@@ -314,9 +314,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -7,4 +7,5 @@ export { RibbonCard } from './RibbonCard';
 export { TextLink } from './TextLink';
 export { CtaBlockRed } from './CtaBlockRed';
 export { AuthFormCard } from './AuthFormCard';
+export { Footer } from './Footer';
 

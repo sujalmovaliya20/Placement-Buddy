@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '@/lib/api';
 import { updateProfileSchema } from '@shared/index';
 import type { UpdateProfileInput, Student } from '@shared/index';
-import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard } from '@/components/ui';
+import { TopBanner, ButtonPrimary, ButtonSecondary, TextInput, RibbonCard, Footer } from '@/components/ui';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -652,9 +652,7 @@ export default function ProfilePage() {
         </RibbonCard>
       </main>
 
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#ffffff] p-[16px] text-center font-helvetica text-heading-2 font-bold select-none">
-        DEVLOPED BY SUJAL MOVALIYA @2026 ALL RIGHTS RESERVED
-      </footer>
+      <Footer />
     </div>
   );
 }
