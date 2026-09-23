@@ -47,6 +47,8 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
   return url.toString();
 }
 
+let refreshPromise: Promise<boolean> | null = null;
+
 /**
  * Core fetch wrapper with error handling and type safety.
  */
@@ -60,12 +62,43 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...customHeaders,
   };
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...fetchOptions,
     credentials: 'include',
     headers,
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   });
+
+  // Handle unauthorized errors by attempting to refresh the token and retrying
+  if (response.status === 401 && path !== '/auth/login' && path !== '/auth/refresh') {
+    if (!refreshPromise) {
+      refreshPromise = (async () => {
+        try {
+          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+          return refreshResponse.ok;
+        } catch (err) {
+          console.error('Failed to automatically refresh session token:', err);
+          return false;
+        } finally {
+          refreshPromise = null;
+        }
+      })();
+    }
+
+    const isRefreshed = await refreshPromise;
+    if (isRefreshed) {
+      // Retry the original request
+      response = await fetch(url, {
+        ...fetchOptions,
+        credentials: 'include',
+        headers,
+        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+      });
+    }
+  }
 
   if (!response.ok) {
     let errorData: ApiErrorResponse;
