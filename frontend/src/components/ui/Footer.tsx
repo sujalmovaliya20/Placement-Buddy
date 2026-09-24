@@ -25,7 +25,7 @@ export function Footer() {
         {/* Center: Developer Credits & System Status Metadata */}
         <div className="flex flex-col items-center gap-[8px] text-center">
           <p className="font-times-new-roman text-[16px] md:text-[17px] text-[#a8a4b6]">
-            DEVELOPED BY <span className="font-bold text-[#fcc20f] hover:text-white transition-colors cursor-pointer uppercase">SUJAL MOVALIYA</span> @2026
+            DEVELOPED IN <span className="font-bold text-[#fcc20f] hover:text-white transition-colors cursor-pointer uppercase"></span> @2026
           </p>
           <div className="font-times-new-roman text-caption text-[#8c889a] uppercase tracking-widest">
             ALL RIGHTS RESERVED // VER: 1.2.0 // EST. 2026

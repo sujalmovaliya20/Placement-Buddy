@@ -31,7 +31,7 @@ export default function ApplyPage() {
   const router = useRouter();
   const params = useParams();
   const driveId = params['driveId'] as string;
-  
+
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [student, setStudent] = useState<Student | null>(null);
@@ -192,7 +192,7 @@ export default function ApplyPage() {
         }
         setAlreadyApplied(true);
         toastSuccess('Application recorded. Opening Google Form...');
-        
+
         // Open Google Form
         window.open(url, '_blank', 'noopener,noreferrer');
       } else {
@@ -403,11 +403,10 @@ export default function ApplyPage() {
                   <button
                     onClick={handleToggleApplied}
                     disabled={isSubmitting}
-                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[10px] border-2 border-frame-ink uppercase cursor-pointer select-none transition-all w-full sm:w-auto shadow-[3px_3px_0px_#000000] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none ${
-                      alreadyApplied
+                    className={`font-helvetica text-ui-label font-bold px-[16px] py-[10px] border-2 border-frame-ink uppercase cursor-pointer select-none transition-all w-full sm:w-auto shadow-[3px_3px_0px_#000000] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none ${alreadyApplied
                         ? 'bg-[#ffebe8] hover:bg-[#ffd5cf] text-[#e91d2a]'
                         : 'bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#10b981]'
-                    }`}
+                      }`}
                   >
                     {isSubmitting
                       ? 'Processing...'
@@ -423,7 +422,7 @@ export default function ApplyPage() {
                 <RibbonCard title="★ QUICK-FILL ASSISTANT ★" variant="periwinkle">
                   <div className="space-y-[16px]">
                     <p className="font-times-new-roman text-body leading-relaxed">
-                      This Google Form is login-restricted, preventing automatic prefilling. 
+                      This Google Form is login-restricted, preventing automatic prefilling.
                       Use the helper below to quickly copy your profile details and paste them into the form.
                     </p>
 
@@ -585,9 +584,8 @@ export default function ApplyPage() {
                             <select
                               value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
-                                hasError ? 'border-[#e91d2a]' : ''
-                              }`}
+                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${hasError ? 'border-[#e91d2a]' : ''
+                                }`}
                             >
                               <option value="">Select option...</option>
                               <option value="Yes">Yes</option>
@@ -598,18 +596,16 @@ export default function ApplyPage() {
                               type="date"
                               value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
-                                hasError ? 'border-[#e91d2a]' : ''
-                              }`}
+                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${hasError ? 'border-[#e91d2a]' : ''
+                                }`}
                             />
                           ) : field.type === 'time' ? (
                             <input
                               type="time"
                               value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${
-                                hasError ? 'border-[#e91d2a]' : ''
-                              }`}
+                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body px-[6px] py-[4px] rounded-none focus:outline-none w-full ${hasError ? 'border-[#e91d2a]' : ''
+                                }`}
                             />
                           ) : (
                             /* Text type fallback */
@@ -617,9 +613,8 @@ export default function ApplyPage() {
                               rows={3}
                               value={(formValues[field.key] as string) || ''}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body p-[8px] rounded-none focus:outline-none w-full ${
-                                hasError ? 'border-[#e91d2a]' : ''
-                              }`}
+                              className={`bg-[#ffffff] text-[#000000] border border-[#000000] font-times-new-roman text-body p-[8px] rounded-none focus:outline-none w-full ${hasError ? 'border-[#e91d2a]' : ''
+                                }`}
                               placeholder={`Enter answer for ${field.label.toLowerCase()}...`}
                             />
                           )}

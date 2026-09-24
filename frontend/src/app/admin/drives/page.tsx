@@ -342,7 +342,7 @@ export default function AdminDrivesPage() {
             <h1 className="font-arial-black text-heading-1 uppercase leading-none tracking-wide text-ink">
               Drives Administrator
             </h1>
-            <p className="font-times-new-roman text-body mt-[4px] text-ink/80">
+            <p className="font-times-new-roman text-[16px] md:text-[18px] mt-[4px] text-ink font-medium">
               Configure placement registers, manage student applications, and push channel updates.
             </p>
           </div>
@@ -359,7 +359,7 @@ export default function AdminDrivesPage() {
                 ★ CREATE NEW DRIVE
               </ButtonPrimary>
             </Link>
-            
+
             <Link href="/admin/analytics">
               <ButtonSecondary
                 className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
@@ -394,7 +394,7 @@ export default function AdminDrivesPage() {
                 onChange={handleSelectAll}
                 className="w-5 h-5 cursor-pointer accent-ink border-2 border-frame-ink"
               />
-              <span className="font-helvetica font-bold uppercase text-caption text-ink">
+              <span className="font-helvetica font-bold uppercase text-[14px] text-ink">
                 Select All ({selectedDrives.length} selected)
               </span>
             </div>
@@ -447,217 +447,271 @@ export default function AdminDrivesPage() {
                       variant={cardVariant}
                     >
                       <div className="space-y-[16px]">
-                    {/* Meta Fields Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-[16px] text-body-sm font-times-new-roman border-b border-[#000000] pb-[12px]">
-                      <div>
-                        <span className="font-bold block">REGISTRATION TYPE:</span>
-                        {drive.source_type === 'google_form' ? 'Google Form Redirect' : 'Native Platform Form'}
-                      </div>
-                      <div>
-                        <span className="font-bold block">DEADLINE:</span>
-                        <span className="font-bold text-ink text-body">{new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}</span>
-                      </div>
-                      <div>
-                        <span className="font-bold block">APPLICANTS:</span>
-                        {applicantsCount} student(s) registered
-                      </div>
-                      <div className="flex gap-[8px] items-end justify-end">
-                        {drive.status === 'draft' && (
-                          <Link href={`/admin/drives/new?driveId=${drive._id}`}>
-                            <ButtonPrimary className="text-center w-full">
-                              EDIT/COMPLETE SETUP
-                            </ButtonPrimary>
-                          </Link>
-                        )}
-                        <ButtonSecondary
-                          onClick={() => handleToggleExpand(drive._id)}
-                          className="text-center"
-                        >
-                          {isExpanded ? '▲ CLOSE' : '▼ EXPAND CONSOLE'}
-                        </ButtonSecondary>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="space-y-[24px] pt-[8px]">
-
-                        {/* Quick Action Bar */}
-                        <div className="flex flex-wrap gap-[12px]">
-                          <ButtonPrimary
-                            onClick={() => handleSendWhatsAppNotification(drive._id)}
-                            disabled={isNotifySending}
-                          >
-                            {isNotifySending ? 'DISPATCHING WHATSAPP...' : '🔊 DISPATCH WHATSAPP NOTIFICATION'}
-                          </ButtonPrimary>
-
-                          <a
-                            href={`${API_BASE_URL}/admin/drives/${drive._id}/export`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ButtonSecondary type="button">
-                              💾 EXPORT APPLICANTS CSV
+                        {/* Meta Fields Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-[16px] border-b border-[#000000] pb-[12px]">
+                          <div className="font-times-new-roman text-[15px] text-ink">
+                            <span className="font-helvetica text-[13px] font-bold uppercase block text-ink/80 mb-[2px]">REGISTRATION TYPE:</span>
+                            <span className="font-bold">{drive.source_type === 'google_form' ? 'Google Form Redirect' : 'Native Platform Form'}</span>
+                          </div>
+                          <div className="font-times-new-roman text-[15px] text-ink">
+                            <span className="font-helvetica text-[13px] font-bold uppercase block text-ink/80 mb-[2px]">DEADLINE:</span>
+                            <span className="font-bold">{new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}</span>
+                          </div>
+                          <div className="font-times-new-roman text-[15px] text-ink">
+                            <span className="font-helvetica text-[13px] font-bold uppercase block text-ink/80 mb-[2px]">APPLICANTS:</span>
+                            <span className="font-bold">{applicantsCount} student(s) registered</span>
+                          </div>
+                          <div className="flex gap-[8px] items-end justify-end">
+                            {drive.status === 'draft' && (
+                              <Link href={`/admin/drives/new?driveId=${drive._id}`}>
+                                <ButtonPrimary className="text-center w-full">
+                                  EDIT/COMPLETE SETUP
+                                </ButtonPrimary>
+                              </Link>
+                            )}
+                            <ButtonSecondary
+                              onClick={() => handleToggleExpand(drive._id)}
+                              className="text-center"
+                            >
+                              {isExpanded ? '▲ CLOSE' : '▼ EXPAND CONSOLE'}
                             </ButtonSecondary>
-                          </a>
-                          
-                          <Link href={`/admin/drives/${drive._id}/analytics`}>
-                            <ButtonSecondary type="button">
-                              📊 VIEW ANALYTICS
-                            </ButtonSecondary>
-                          </Link>
-
-                          <ButtonSecondary
-                            type="button"
-                            onClick={() => handleDeleteDrive(drive._id)}
-                            className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[3px_3px_0px_#000000]"
-                            bgClassName="bg-[#ffffff]"
-                            textClassName="text-[#e91d2a] font-bold uppercase tracking-wider"
-                            borderClassName="border-2 border-[#e91d2a] shadow-[2px_2px_0px_#000000]"
-                          >
-                            🗑️ DELETE DRIVE
-                          </ButtonSecondary>
+                          </div>
                         </div>
 
-                        {/* Google Form Mapping Editor */}
-                        {drive.source_type === 'google_form' && (
-                          <div className="border-2 border-frame-ink p-[20px] bg-[#ffffff] space-y-[20px] shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000]">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-frame-ink pb-[12px] gap-[12px]">
-                              <h3 className="font-helvetica text-heading-3 uppercase font-bold">
-                                Google Form Mapping Configuration
-                              </h3>
-                              <ButtonSecondary
-                                onClick={() => handleFetchFormFields(drive._id)}
-                                disabled={isFieldsLoading}
-                                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
-                                bgClassName="bg-canvas hover:bg-neutral-50"
-                                textClassName="text-ink font-bold uppercase tracking-wider text-button"
-                                borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
-                                roundedClassName="rounded-none"
+                        {isExpanded && (
+                          <div className="space-y-[24px] pt-[8px]">
+
+                            {/* Quick Action Bar */}
+                            <div className="flex flex-wrap gap-[12px]">
+                              <ButtonPrimary
+                                onClick={() => handleSendWhatsAppNotification(drive._id)}
+                                disabled={isNotifySending}
                               >
-                                {isFieldsLoading ? 'RETRIEVING FORM FIELDS...' : 'RETRIEVE GOOGLE FORM FIELDS'}
+                                {isNotifySending ? 'DISPATCHING WHATSAPP...' : '🔊 DISPATCH WHATSAPP NOTIFICATION'}
+                              </ButtonPrimary>
+
+                              <a
+                                href={`${API_BASE_URL}/admin/drives/${drive._id}/export`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ButtonSecondary type="button">
+                                  💾 EXPORT APPLICANTS CSV
+                                </ButtonSecondary>
+                              </a>
+
+                              <Link href={`/admin/drives/${drive._id}/analytics`}>
+                                <ButtonSecondary type="button">
+                                  📊 VIEW ANALYTICS
+                                </ButtonSecondary>
+                              </Link>
+
+                              <ButtonSecondary
+                                type="button"
+                                onClick={() => handleDeleteDrive(drive._id)}
+                                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[3px_3px_0px_#000000]"
+                                bgClassName="bg-[#ffffff]"
+                                textClassName="text-[#e91d2a] font-bold uppercase tracking-wider"
+                                borderClassName="border-2 border-[#e91d2a] shadow-[2px_2px_0px_#000000]"
+                              >
+                                🗑️ DELETE DRIVE
                               </ButtonSecondary>
                             </div>
 
-                            <div className="border border-dashed border-frame-ink p-[12px] bg-[#fffde8] text-ink font-times-new-roman text-[15px] leading-relaxed shadow-[1px_1px_0px_#000000]">
-                              Fetch the fields from your public Google Form. Then, map student profile fields to their corresponding Google Form entry keys (e.g. <code className="bg-black/5 px-[4px] py-[2px] border border-black/10 font-mono font-bold">entry.123456</code>).
-                            </div>
+                            {/* Google Form Mapping Editor */}
+                            {drive.source_type === 'google_form' && (
+                              <div className="border-2 border-frame-ink p-[20px] bg-[#ffffff] space-y-[20px] shadow-[4px_4px_0px_#000000] transition-all hover:shadow-[6px_6px_0px_#000000]">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-frame-ink pb-[12px] gap-[12px]">
+                                  <h3 className="font-helvetica text-heading-3 uppercase font-bold">
+                                    Google Form Mapping Configuration
+                                  </h3>
+                                  <ButtonSecondary
+                                    onClick={() => handleFetchFormFields(drive._id)}
+                                    disabled={isFieldsLoading}
+                                    className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                                    bgClassName="bg-canvas hover:bg-neutral-50"
+                                    textClassName="text-ink font-bold uppercase tracking-wider text-button"
+                                    borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
+                                    roundedClassName="rounded-none"
+                                  >
+                                    {isFieldsLoading ? 'RETRIEVING FORM FIELDS...' : 'RETRIEVE GOOGLE FORM FIELDS'}
+                                  </ButtonSecondary>
+                                </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] pt-[8px]">
-                              {STUDENT_FIELDS.map((field) => {
-                                const currentMapping = driveMapping[field.key] || '';
-                                return (
-                                  <div key={field.key} className="space-y-[4px]">
-                                    <label className="font-helvetica text-ui-label text-ink block font-bold">
-                                      {field.label}
-                                    </label>
-                                    <div className="flex flex-col sm:flex-row gap-[8px]">
-                                      {/* Native styled dropdown */}
-                                      <select
-                                        value={currentMapping}
-                                        onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[8px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full sm:w-[60%] h-[44px] shadow-[2px_2px_0px_#000000]"
-                                      >
-                                        <option value="">Select parsed field...</option>
-                                        {fieldsList.map((f) => (
-                                          <option key={f.entryId} value={f.entryId}>
-                                            {f.label} ({f.entryId})
-                                          </option>
+                                <div className="border border-dashed border-frame-ink p-[12px] bg-[#fffde8] text-ink font-times-new-roman text-[15px] leading-relaxed shadow-[1px_1px_0px_#000000]">
+                                  Fetch the fields from your public Google Form. Then, map student profile fields to their corresponding Google Form entry keys (e.g. <code className="bg-black/5 px-[4px] py-[2px] border border-black/10 font-mono font-bold">entry.123456</code>).
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] pt-[8px]">
+                                  {STUDENT_FIELDS.map((field) => {
+                                    const currentMapping = driveMapping[field.key] || '';
+                                    return (
+                                      <div key={field.key} className="space-y-[4px]">
+                                        <label className="font-helvetica text-ui-label text-ink block font-bold">
+                                          {field.label}
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row gap-[8px]">
+                                          {/* Native styled dropdown */}
+                                          <select
+                                            value={currentMapping}
+                                            onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
+                                            className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[8px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full sm:w-[60%] h-[44px] shadow-[2px_2px_0px_#000000]"
+                                          >
+                                            <option value="">Select parsed field...</option>
+                                            {fieldsList.map((f) => (
+                                              <option key={f.entryId} value={f.entryId}>
+                                                {f.label} ({f.entryId})
+                                              </option>
+                                            ))}
+                                          </select>
+                                          {/* Manual entry override */}
+                                          <TextInput
+                                            placeholder="Or type entryId manually"
+                                            value={currentMapping}
+                                            onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
+                                            className="w-full sm:w-[40%]"
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="pt-[12px] border-t-2 border-frame-ink mt-[12px] flex justify-end">
+                                  <ButtonPrimary
+                                    onClick={() => handleSaveMapping(drive._id)}
+                                    className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                                    bgClassName="bg-yellow-sticker"
+                                    textClassName="text-ink font-bold uppercase tracking-wider"
+                                    borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                                    roundedClassName="rounded-none"
+                                  >
+                                    SAVE FIELD MAPPING CONFIGURATION
+                                  </ButtonPrimary>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Applicants Data Table */}
+                            <div className="space-y-[8px]">
+                              <h3 className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
+                                Registered Applicants List
+                              </h3>
+
+                              {isAppLoading ? (
+                                <p className="font-times-new-roman text-body-sm italic">Loading applicant records from main registrar...</p>
+                              ) : driveApps.length === 0 ? (
+                                <div className="border border-dashed border-[#000000] p-[24px] text-center font-times-new-roman text-body-sm">
+                                  No students have applied to this recruitment drive yet.
+                                </div>
+                              ) : (
+                                <>
+                                  {/* Desktop Table View */}
+                                  <div className="hidden md:block border border-[#000000] overflow-x-auto rounded-none">
+                                    <table className="w-full text-left border-collapse">
+                                      <thead>
+                                        <tr className="bg-[#ffffff]">
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            Enrollment No
+                                          </th>
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            Name
+                                          </th>
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            Course
+                                          </th>
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            CGPA (Prev Sem)
+                                          </th>
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            Status
+                                          </th>
+                                          <th className="border-b border-[#000000] px-[12px] py-[10px] font-helvetica text-[13px] uppercase font-bold select-none text-ink/80">
+                                            Actions
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {driveApps.map((app) => (
+                                          <tr key={app._id} className="border-b border-[#000000] last:border-b-0 hover:bg-neutral-50 transition-colors">
+                                            <td className="px-[12px] py-[10px] font-times-new-roman text-body md:text-[15px] text-ink font-bold">
+                                              {app.student_id?.enrollment_number}
+                                            </td>
+                                            <td className="px-[12px] py-[10px] font-times-new-roman text-body md:text-[15px] text-ink font-bold">
+                                              {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
+                                            </td>
+                                            <td className="px-[12px] py-[10px] font-times-new-roman text-body md:text-[15px] text-ink">
+                                              {app.student_id?.course}
+                                            </td>
+                                            <td className="px-[12px] py-[10px] font-times-new-roman text-body md:text-[15px] text-ink">
+                                              {app.student_id?.cgpa_previous_semester}
+                                            </td>
+                                            <td className="px-[12px] py-[10px] font-times-new-roman text-body md:text-[15px] text-ink">
+                                              <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
+                                                app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
+                                                }`}>
+                                                {app.status}
+                                              </span>
+                                            </td>
+                                            <td className="px-[12px] py-[8px] flex gap-[8px]">
+                                              {app.status !== 'shortlisted' && (
+                                                <button
+                                                  onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
+                                                  className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
+                                                >
+                                                  SHORTLIST
+                                                </button>
+                                              )}
+                                              {app.status !== 'rejected' && (
+                                                <button
+                                                  onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
+                                                  className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
+                                                >
+                                                  REJECT
+                                                </button>
+                                              )}
+                                            </td>
+                                          </tr>
                                         ))}
-                                      </select>
-                                      {/* Manual entry override */}
-                                      <TextInput
-                                        placeholder="Or type entryId manually"
-                                        value={currentMapping}
-                                        onChange={(e) => handleMappingChange(drive._id, field.key, e.target.value)}
-                                        className="w-full sm:w-[40%]"
-                                      />
-                                    </div>
+                                      </tbody>
+                                    </table>
                                   </div>
-                                );
-                              })}
-                            </div>
 
-                            <div className="pt-[12px] border-t-2 border-frame-ink mt-[12px] flex justify-end">
-                              <ButtonPrimary
-                                onClick={() => handleSaveMapping(drive._id)}
-                                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
-                                bgClassName="bg-yellow-sticker"
-                                textClassName="text-ink font-bold uppercase tracking-wider"
-                                borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
-                                roundedClassName="rounded-none"
-                              >
-                                SAVE FIELD MAPPING CONFIGURATION
-                              </ButtonPrimary>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Applicants Data Table */}
-                        <div className="space-y-[8px]">
-                          <h3 className="font-helvetica text-heading-3 uppercase font-bold border-b border-[#000000] pb-[4px]">
-                            Registered Applicants List
-                          </h3>
-
-                          {isAppLoading ? (
-                            <p className="font-times-new-roman text-body-sm italic">Loading applicant records from main registrar...</p>
-                          ) : driveApps.length === 0 ? (
-                            <div className="border border-dashed border-[#000000] p-[24px] text-center font-times-new-roman text-body-sm">
-                              No students have applied to this recruitment drive yet.
-                            </div>
-                          ) : (
-                            <>
-                              {/* Desktop Table View */}
-                              <div className="hidden md:block border border-[#000000] overflow-x-auto rounded-none">
-                                <table className="w-full text-left border-collapse">
-                                  <thead>
-                                    <tr className="bg-[#ffffff]">
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        Enrollment No
-                                      </th>
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        Name
-                                      </th>
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        Course
-                                      </th>
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        CGPA (Prev Sem)
-                                      </th>
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        Status
-                                      </th>
-                                      <th className="border-b border-[#000000] px-[12px] py-[8px] font-helvetica text-caption uppercase font-bold select-none text-ink">
-                                        Actions
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
+                                  {/* Mobile Stacked Cards View */}
+                                  <div className="block md:hidden space-y-[12px]">
                                     {driveApps.map((app) => (
-                                      <tr key={app._id} className="border-b border-[#000000] last:border-b-0">
-                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                          {app.student_id?.enrollment_number}
-                                        </td>
-                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000] font-bold">
-                                          {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
-                                        </td>
-                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                          {app.student_id?.course}
-                                        </td>
-                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
-                                          {app.student_id?.cgpa_previous_semester}
-                                        </td>
-                                        <td className="px-[12px] py-[8px] font-times-new-roman text-body-sm text-[#000000]">
+                                      <div key={app._id} className="border border-[#000000] p-[12px] bg-[#ffffff] space-y-[8px] text-[15px] font-times-new-roman text-ink">
+                                        <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                          <span className="font-bold font-helvetica text-[13px] uppercase text-ink/80">Enrollment No</span>
+                                          <span className="font-bold">{app.student_id?.enrollment_number}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                          <span className="font-bold font-helvetica text-[13px] uppercase text-ink/80">Name</span>
+                                          <span className="font-bold">
+                                            {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                          <span className="font-bold font-helvetica text-[13px] uppercase text-ink/80">Course</span>
+                                          <span className="font-bold">{app.student_id?.course}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                          <span className="font-bold font-helvetica text-[13px] uppercase text-ink/80">CGPA (Prev Sem)</span>
+                                          <span className="font-bold">{app.student_id?.cgpa_previous_semester}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
+                                          <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Status</span>
                                           <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
-                                              app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
+                                            app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
                                             }`}>
                                             {app.status}
                                           </span>
-                                        </td>
-                                        <td className="px-[12px] py-[8px] flex gap-[8px]">
+                                        </div>
+                                        <div className="flex gap-[8px] pt-[4px] justify-end">
                                           {app.status !== 'shortlisted' && (
                                             <button
                                               onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
-                                              className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
+                                              className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
                                             >
                                               SHORTLIST
                                             </button>
@@ -665,81 +719,27 @@ export default function AdminDrivesPage() {
                                           {app.status !== 'rejected' && (
                                             <button
                                               onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
-                                              className="px-[8px] py-[2px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
+                                              className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
                                             >
                                               REJECT
                                             </button>
                                           )}
-                                        </td>
-                                      </tr>
+                                        </div>
+                                      </div>
                                     ))}
-                                  </tbody>
-                                </table>
-                              </div>
-
-                              {/* Mobile Stacked Cards View */}
-                              <div className="block md:hidden space-y-[12px]">
-                                {driveApps.map((app) => (
-                                  <div key={app._id} className="border border-[#000000] p-[12px] bg-[#ffffff] space-y-[8px] text-body-sm font-times-new-roman">
-                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
-                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Enrollment No</span>
-                                      <span className="text-[#000000]">{app.student_id?.enrollment_number}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
-                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Name</span>
-                                      <span className="text-[#000000] font-bold">
-                                        {app.student_id ? `${app.student_id.first_name || ''} ${app.student_id.last_name || ''}`.trim() : ''}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
-                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Course</span>
-                                      <span className="text-[#000000]">{app.student_id?.course}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
-                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">CGPA (Prev Sem)</span>
-                                      <span className="text-[#000000]">{app.student_id?.cgpa_previous_semester}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-dashed border-gray-300 pb-[4px]">
-                                      <span className="font-bold font-helvetica text-caption uppercase text-gray-500">Status</span>
-                                      <span className={`font-bold uppercase ${app.status === 'shortlisted' ? 'text-[#8e8a25]' :
-                                          app.status === 'rejected' ? 'text-[#e91d2a]' : 'text-[#000000]'
-                                        }`}>
-                                        {app.status}
-                                      </span>
-                                    </div>
-                                    <div className="flex gap-[8px] pt-[4px] justify-end">
-                                      {app.status !== 'shortlisted' && (
-                                        <button
-                                          onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'shortlisted')}
-                                          className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#8e8a25] rounded-none cursor-pointer"
-                                        >
-                                          SHORTLIST
-                                        </button>
-                                      )}
-                                      {app.status !== 'rejected' && (
-                                        <button
-                                          onClick={() => handleUpdateApplicationStatus(drive._id, app._id, 'rejected')}
-                                          className="px-[12px] py-[8px] border border-[#000000] bg-[#ffffff] font-helvetica text-button font-bold text-[#e91d2a] rounded-none cursor-pointer"
-                                        >
-                                          REJECT
-                                        </button>
-                                      )}
-                                    </div>
                                   </div>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </div>
+                                </>
+                              )}
+                            </div>
 
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </RibbonCard>
                   </div>
-                </RibbonCard>
-              </div>
-            </div>
-          );
-        })
+                </div>
+              );
+            })
           )}
         </div>
       </main>

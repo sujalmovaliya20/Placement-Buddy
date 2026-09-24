@@ -205,25 +205,22 @@ export default function DashboardPage() {
           <div className="relative z-10 flex border-2 border-frame-ink bg-[#ffffff] shadow-[2px_2px_0px_#000000]">
             <button
               onClick={() => setFilterTab('all')}
-              className={`px-[16px] py-[8px] font-helvetica text-button font-bold rounded-none transition-colors duration-150 ${
-                filterTab === 'all' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
-              }`}
+              className={`px-[16px] py-[8px] font-helvetica text-button font-bold rounded-none transition-colors duration-150 ${filterTab === 'all' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
+                }`}
             >
               ALL DRIVES
             </button>
             <button
               onClick={() => setFilterTab('applied')}
-              className={`px-[16px] py-[8px] font-helvetica text-button font-bold border-l-2 border-[#000000] rounded-none transition-colors duration-150 ${
-                filterTab === 'applied' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
-              }`}
+              className={`px-[16px] py-[8px] font-helvetica text-button font-bold border-l-2 border-[#000000] rounded-none transition-colors duration-150 ${filterTab === 'applied' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
+                }`}
             >
               APPLIED
             </button>
             <button
               onClick={() => setFilterTab('eligible')}
-              className={`px-[16px] py-[8px] font-helvetica text-button font-bold border-l-2 border-[#000000] rounded-none transition-colors duration-150 ${
-                filterTab === 'eligible' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
-              }`}
+              className={`px-[16px] py-[8px] font-helvetica text-button font-bold border-l-2 border-[#000000] rounded-none transition-colors duration-150 ${filterTab === 'eligible' ? 'bg-[#000000] text-[#ffffff]' : 'text-[#000000] hover:bg-neutral-50'
+                }`}
             >
               NOT APPLIED
             </button>
@@ -265,11 +262,11 @@ export default function DashboardPage() {
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-[16px]">
                     <div className="space-y-[8px]">
                       <div className="font-times-new-roman text-body text-[#000000] flex flex-wrap items-center gap-[6px]">
-                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10 text-caption tracking-wider">Deadline:</span> 
+                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10 text-caption tracking-wider">Deadline:</span>
                         <span className="font-bold text-ink">{new Date(drive.deadline).toLocaleDateString()} at {new Date(drive.deadline).toLocaleTimeString()}</span>
                       </div>
                       <div className="font-times-new-roman text-body text-[#000000] flex items-center gap-[6px]">
-                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10">Application Mode:</span> 
+                        <span className="font-bold uppercase bg-black/5 px-[6px] py-[2px] border border-black/10">Application Mode:</span>
                         <span>{drive.source_type === 'google_form' ? 'External Google Form' : 'Native Platform Form'}</span>
                       </div>
                       {app && (
@@ -282,7 +279,7 @@ export default function DashboardPage() {
                     <div className="w-full md:w-auto flex justify-end">
                       {app ? (
                         <Link href={`/apply/${drive._id}`} className="w-full md:w-auto">
-                          <ButtonSecondary 
+                          <ButtonSecondary
                             className="w-full md:w-auto transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
                             bgClassName="bg-canvas hover:bg-neutral-50"
                             textClassName="text-ink font-bold uppercase tracking-wider"
@@ -294,7 +291,7 @@ export default function DashboardPage() {
                         </Link>
                       ) : (
                         <Link href={`/apply/${drive._id}`} className="w-full md:w-auto">
-                          <ButtonPrimary 
+                          <ButtonPrimary
                             className="w-full md:w-auto transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
                             bgClassName="bg-[#e91d2a] hover:bg-[#ff3b47]"
                             textClassName="text-white font-bold uppercase tracking-wider"

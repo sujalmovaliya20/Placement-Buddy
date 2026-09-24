@@ -44,4 +44,7 @@ const applicationSchema = new Schema<IApplication>(
 // Compound unique index to prevent duplicate student application per drive
 applicationSchema.index({ student_id: 1, drive_id: 1 }, { unique: true });
 
+// Performance optimization: Compound index to speed up filtering and analytics aggregations
+applicationSchema.index({ drive_id: 1, status: 1 });
+
 export const Application = mongoose.model<IApplication>('Application', applicationSchema);
