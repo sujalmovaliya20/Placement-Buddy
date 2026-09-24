@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { adminDriveController } from '../controllers/admin-drive.controller';
+import { adminAnalyticsController } from '../controllers/admin-analytics.controller';
 import { googleAuthController } from '../controllers/google-auth.controller';
 import { asyncHandler } from '../utils/async-handler';
 import { authenticate } from '../middleware/auth.middleware';
@@ -27,16 +28,22 @@ router.use(authenticate, isAdmin);
 router.get('/google-auth/connect', asyncHandler(googleAuthController.connect));
 router.delete('/google-auth/disconnect', asyncHandler(googleAuthController.disconnect));
 
+// Global Analytics
+router.get('/analytics/overview', asyncHandler(adminAnalyticsController.getOverview));
+
 // Drives management
 router.post('/drives', validate({ body: createDriveSchema }), asyncHandler(adminDriveController.create));
 router.get('/drives', validate({ query: listQuerySchema }), asyncHandler(adminDriveController.list));
+router.delete('/drives/bulk', asyncHandler(adminDriveController.bulkDelete));
 router.post('/drives/:id/parse-google-form', validate({ body: parseGoogleFormSchema }), asyncHandler(adminDriveController.parseGoogleForm));
 router.post('/drives/:id/parse-form-structure', validate({ body: parseFormStructureSchema }), asyncHandler(adminDriveController.parseFormStructure));
 router.post('/drives/:id/parse-prefill-reference', validate({ body: parsePrefillReferenceSchema }), asyncHandler(adminDriveController.parsePrefillReference));
 router.put('/drives/:id/mapping', validate({ body: updateMappingSchema }), asyncHandler(adminDriveController.updateMapping));
 router.get('/drives/:id/applications', asyncHandler(adminDriveController.getApplications));
 router.get('/drives/:id/export', asyncHandler(adminDriveController.exportApplicationsCsv));
+router.get('/drives/:id/analytics', asyncHandler(adminDriveController.getDriveAnalytics));
 router.post('/drives/:id/notify', asyncHandler(adminDriveController.notify));
+router.delete('/drives/:id', asyncHandler(adminDriveController.deleteDrive));
 
 export const adminRoutes = router;
 

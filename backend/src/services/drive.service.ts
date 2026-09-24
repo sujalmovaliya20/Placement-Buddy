@@ -143,4 +143,90 @@ export const driveService = {
     await DriveModel.findByIdAndDelete(id);
     logger.info({ driveId: id }, 'Drive deleted');
   },
+
+  async getDriveAnalytics(id: string) {
+    // Pipeline for per-drive analytics
+    const pipeline = [
+      { $match: { drive_id: new (require('mongoose').Types.ObjectId)(id) } },
+      {
+        $facet: {
+          totalApplications: [{ $count: 'count' }],
+          statusBreakdown: [
+            { $group: { _id: '$status', count: { $sum: 1 } } }
+          ],
+          courseBreakdown: [
+            {
+              $lookup: {
+                from: 'students',
+                localField: 'student_id',
+                foreignField: '_id',
+                as: 'student',
+              }
+            },
+            { $unwind: '$student' },
+            { $group: { _id: '$student.course', count: { $sum: 1 } } }
+          ],
+          cgpaDistribution: [
+            {
+              $lookup: {
+                from: 'students',
+                localField: 'student_id',
+                foreignField: '_id',
+                as: 'student',
+              }
+            },
+            { $unwind: '$student' },
+            {
+              $bucket: {
+                groupBy: '$student.cgpa_previous_semester',
+                boundaries: [0, 7, 8, 9, 10.1], // <7, 7-8, 8-9, 9+
+                default: 'Unknown',
+                output: { count: { $sum: 1 } }
+              }
+            }
+          ],
+          timeline: [
+            {
+              $group: {
+                _id: { $dateToString: { format: '%Y-%m-%d', date: '$applied_at' } },
+                count: { $sum: 1 }
+              }
+            },
+            { $sort: { _id: 1 } }
+          ]
+        }
+      }
+    ];
+
+    const result = await require('../models').ApplicationModel.aggregate(pipeline);
+    const data = result[0] || {};
+
+    const formatBucket = (val: any) => {
+      if (val === 0) return '<7';
+      if (val === 7) return '7-8';
+      if (val === 8) return '8-9';
+      if (val === 9) return '9+';
+      return 'Unknown';
+    };
+
+    return {
+      totalApplications: data.totalApplications?.[0]?.count || 0,
+      statusBreakdown: (data.statusBreakdown || []).map((b: any) => ({
+        status: b._id,
+        count: b.count,
+      })),
+      courseBreakdown: (data.courseBreakdown || []).map((b: any) => ({
+        course: b._id || 'Unknown',
+        count: b.count,
+      })),
+      cgpaDistribution: (data.cgpaDistribution || []).map((b: any) => ({
+        range: typeof b._id === 'number' ? formatBucket(b._id) : b._id,
+        count: b.count,
+      })),
+      timeline: (data.timeline || []).map((b: any) => ({
+        date: b._id,
+        count: b.count,
+      })),
+    };
+  }
 };

@@ -13,17 +13,18 @@
     "clean": "rm -rf .next out"
   },
   "dependencies": {
-    "next": "^14.2.25",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
+    "@hookform/resolvers": "^3.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.400.0",
+    "next": "^14.2.25",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "react-hook-form": "^7.51.5",
-    "@hookform/resolvers": "^3.6.0",
-    "zod": "^3.23.0",
+    "recharts": "^3.10.1",
     "tailwind-merge": "^2.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

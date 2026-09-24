@@ -23,6 +23,8 @@ interface FormField {
   entryId: string;
   label: string;
   type: string;
+  suggested_field?: string | null;
+  confidence?: number;
 }
 
 interface DriveResponse {
@@ -71,6 +73,7 @@ function AdminNewDrivePageContent() {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedFields, setParsedFields] = useState<FormField[]>([]);
   const [fieldMappings, setFieldMappings] = useState<Record<string, string>>({});
+  const [autoSuggestedFields, setAutoSuggestedFields] = useState<Set<string>>(new Set());
   const [isSavingMapping, setIsSavingMapping] = useState(false);
   const [mappingSaved, setMappingSaved] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -311,7 +314,19 @@ function AdminNewDrivePageContent() {
         setRequiresManualFill(false);
         setNeedsPrefillReferenceLink(false);
         setParsedFields(res.data);
-        toastSuccess('Successfully parsed input fields from Google Form.');
+        // Auto-populate fieldMappings from suggestions
+        const suggestedMappings: Record<string, string> = {};
+        const suggestedEntries = new Set<string>();
+        for (const f of res.data) {
+          if (f.suggested_field) {
+            suggestedMappings[f.entryId] = f.suggested_field;
+            suggestedEntries.add(f.entryId);
+          }
+        }
+        setFieldMappings(suggestedMappings);
+        setAutoSuggestedFields(suggestedEntries);
+        const sugCount = suggestedEntries.size;
+        toastSuccess(`Parsed ${res.data.length} field(s)${sugCount > 0 ? ` — ${sugCount} auto-suggested` : ''}.`);
       }
     } catch (err) {
       toastError((err as Error).message || 'Failed to parse Google Form. Ensure form is public.');
@@ -390,13 +405,25 @@ function AdminNewDrivePageContent() {
         // Populate the standard field mapping table — same shape as parsedFields
         setParsedFields(res.data);
         setRequiresManualFill(false);
+        // Auto-populate fieldMappings from suggestions
+        const suggestedMappings: Record<string, string> = {};
+        const suggestedEntries = new Set<string>();
+        for (const f of res.data) {
+          if (f.suggested_field) {
+            suggestedMappings[f.entryId] = f.suggested_field;
+            suggestedEntries.add(f.entryId);
+          }
+        }
+        setFieldMappings(suggestedMappings);
+        setAutoSuggestedFields(suggestedEntries);
         const skipped: string[] = res.skipped || [];
+        const sugCount = suggestedEntries.size;
         if (skipped.length > 0) {
           toastSuccess(
-            `Mapped ${res.data.length} field(s). Skipped ${skipped.length} non-question item(s) — see backend logs.`
+            `Mapped ${res.data.length} field(s)${sugCount > 0 ? ` (${sugCount} auto-suggested)` : ''}. Skipped ${skipped.length} non-question item(s).`
           );
         } else {
-          toastSuccess(`Successfully mapped ${res.data.length} field(s) from the pre-filled reference link.`);
+          toastSuccess(`Mapped ${res.data.length} field(s)${sugCount > 0 ? ` — ${sugCount} auto-suggested` : ''}.`);
         }
       } else {
         toastError('No fields were returned — ensure the reference link has all questions pre-filled.');
@@ -993,9 +1020,13 @@ function AdminNewDrivePageContent() {
                                 </div>
                               </td>
                               <td className="px-[12px] py-[8px]">
+                                <div className="flex items-center gap-[8px]">
                                 <select
                                   value={currentVal}
-                                  onChange={(e) => setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }))}
+                                  onChange={(e) => {
+                                    setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }));
+                                    setAutoSuggestedFields(prev => { const n = new Set(prev); n.delete(field.entryId); return n; });
+                                  }}
                                   className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[6px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full shadow-[2px_2px_0px_#000000]"
                                 >
                                   <option value="">Custom — student fills manually</option>
@@ -1021,6 +1052,10 @@ function AdminNewDrivePageContent() {
                                   <option value="experience_months">Experience Months (experience_months)</option>
                                   <option value="resume_url">Resume Link (resume_url)</option>
                                 </select>
+                                {autoSuggestedFields.has(field.entryId) && (
+                                  <span className="inline-block whitespace-nowrap font-helvetica text-[10px] uppercase font-bold tracking-wider text-[#4a7c59] bg-[#e8f5e9] border border-[#4a7c59] px-[6px] py-[2px] select-none" title={`Confidence: ${field.confidence ?? '?'}%`}>Auto</span>
+                                )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1045,9 +1080,13 @@ function AdminNewDrivePageContent() {
                             <label className="font-helvetica text-ui-label text-ink select-none font-bold">
                               Mapped Profile Attribute
                             </label>
+                            <div className="flex items-center gap-[8px]">
                             <select
                               value={currentVal}
-                              onChange={(e) => setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }))}
+                              onChange={(e) => {
+                                setFieldMappings(prev => ({ ...prev, [field.entryId]: e.target.value }));
+                                setAutoSuggestedFields(prev => { const n = new Set(prev); n.delete(field.entryId); return n; });
+                              }}
                               className="bg-[#ffffff] text-[#000000] border-2 border-frame-ink font-helvetica text-ui-label px-[10px] py-[8px] rounded-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_#000000] transition-all duration-150 w-full h-[44px] shadow-[2px_2px_0px_#000000]"
                             >
                               <option value="">Custom — student fills manually</option>
@@ -1073,6 +1112,10 @@ function AdminNewDrivePageContent() {
                               <option value="experience_months">Experience Months (experience_months)</option>
                               <option value="resume_url">Resume Link (resume_url)</option>
                             </select>
+                            {autoSuggestedFields.has(field.entryId) && (
+                              <span className="inline-block whitespace-nowrap font-helvetica text-[10px] uppercase font-bold tracking-wider text-[#4a7c59] bg-[#e8f5e9] border border-[#4a7c59] px-[6px] py-[2px] select-none" title={`Confidence: ${field.confidence ?? '?'}%`}>Auto</span>
+                            )}
+                            </div>
                           </div>
                         </div>
                       );

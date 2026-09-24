@@ -41,6 +41,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().default(''),
   GOOGLE_REDIRECT_URI: z.string().default(''),
   GOOGLE_TOKEN_ENCRYPTION_KEY: z.string().default(''),
+  NVIDIA_NIM_API_KEY: z.string().optional().default(''),
+  NVIDIA_NIM_BASE_URL: z.string().default('https://integrate.api.nvidia.com/v1'),
+  NVIDIA_NIM_MODEL: z.string().default('meta/llama-3.1-70b-instruct'),
 });
 
 export type Env = z.infer<typeof envSchema>;

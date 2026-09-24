@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { whatsappService } from '../services/whatsapp.service';
 import { buildDriveMessage } from '../config/whatsappTemplates';
 import { env } from '../config/env';
+import { suggestFieldMappings } from '../utils/fieldMatcher';
 import { PAGINATION } from '../config/constants';
 
 /**
@@ -218,9 +219,10 @@ export const adminDriveController = {
 
     try {
       const fields = await fetchGoogleFormFields(drive.google_form_url);
+      const enrichedFields = await suggestFieldMappings(fields);
       res.status(StatusCodes.OK).json({
         success: true,
-        data: fields,
+        data: enrichedFields,
       });
     } catch (err: any) {
       // Scrape failed (login-redirect detected or parse error).
@@ -431,14 +433,17 @@ export const adminDriveController = {
       type: q.type,
     }));
 
+    // 7. Enrich with auto-suggested profile field matches
+    const enrichedMapped = await suggestFieldMappings(mapped);
+
     logger.info(
-      { adminId, driveId: id, mappedCount: mapped.length, skippedCount: skippedItems.length },
+      { adminId, driveId: id, mappedCount: enrichedMapped.length, skippedCount: skippedItems.length },
       'parse-prefill-reference: mapping generated successfully'
     );
 
     res.status(StatusCodes.OK).json({
       success: true,
-      data: mapped,
+      data: enrichedMapped,
       skipped: skippedItems,
     });
   },
@@ -619,4 +624,55 @@ export const adminDriveController = {
       });
     }
   },
+
+  async getDriveAnalytics(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const drive = await DriveModel.findById(id);
+    if (!drive) {
+      throw new AppError('Drive not found', StatusCodes.NOT_FOUND);
+    }
+    const { driveService } = require('../services/drive.service');
+    const analytics = await driveService.getDriveAnalytics(id);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: analytics,
+    });
+  },
+
+  async deleteDrive(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { driveService } = require('../services/drive.service');
+    await driveService.delete(id);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Drive deleted successfully',
+    });
+  },
+
+  async bulkDelete(req: Request, res: Response): Promise<void> {
+    const { ids } = req.body as { ids: string[] };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('No drive IDs provided', StatusCodes.BAD_REQUEST);
+    }
+    const { driveService } = require('../services/drive.service');
+    
+    // Delete each drive (which respects the in_progress constraint via driveService.delete)
+    const results = { successful: 0, failed: 0, errors: [] as string[] };
+    
+    for (const id of ids) {
+      try {
+        await driveService.delete(id);
+        results.successful++;
+      } catch (err: any) {
+        results.failed++;
+        results.errors.push(`Drive ${id}: ${err.message}`);
+      }
+    }
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: `Bulk delete complete. Deleted: ${results.successful}, Failed: ${results.failed}`,
+      data: results
+    });
+  }
 };

@@ -69,5 +69,5 @@ export {
 } from './validation';
 export type { SignupInput, LoginInput, UpdateProfileInput } from './validation';
 
-
-
+// Analytics
+export type { DriveAnalytics, GlobalAnalytics } from './types/analytics';

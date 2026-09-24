@@ -152,7 +152,7 @@ export const api = {
     return request<ApiResponse<T>>(path, { method: 'PATCH', body });
   },
 
-  delete<T = void>(path: string): Promise<T extends void ? void : ApiResponse<T>> {
-    return request<T extends void ? void : ApiResponse<T>>(path, { method: 'DELETE' });
+  delete<T = void>(path: string, body?: Record<string, unknown>): Promise<T extends void ? void : ApiResponse<T>> {
+    return request<T extends void ? void : ApiResponse<T>>(path, { method: 'DELETE', body });
   },
 };

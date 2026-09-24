@@ -64,6 +64,7 @@ export default function AdminDrivesPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [drives, setDrives] = useState<Drive[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDrives, setSelectedDrives] = useState<string[]>([]);
 
   // Expanded drives details state (applications list, form fields, mapping status)
   const [expandedDrive, setExpandedDrive] = useState<string | null>(null);
@@ -257,6 +258,49 @@ export default function AdminDrivesPage() {
     }
   };
 
+  const handleToggleDriveSelect = (driveId: string) => {
+    setSelectedDrives((prev) =>
+      prev.includes(driveId) ? prev.filter((id) => id !== driveId) : [...prev, driveId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDrives.length === drives.length) {
+      setSelectedDrives([]);
+    } else {
+      setSelectedDrives(drives.map((d) => d._id));
+    }
+  };
+
+  const handleDeleteDrive = async (driveId: string) => {
+    if (!window.confirm('Are you sure you want to delete this drive? This cannot be undone.')) return;
+    try {
+      const res = await api.delete<{ success: boolean; message: string }>(`/admin/drives/${driveId}`);
+      if (res && res.success) {
+        toastSuccess('Drive deleted successfully.');
+        setDrives((prev) => prev.filter((d) => d._id !== driveId));
+        setSelectedDrives((prev) => prev.filter((id) => id !== driveId));
+      }
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to delete drive.');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDrives.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedDrives.length} selected drive(s)? This cannot be undone.`)) return;
+    try {
+      const res = await api.delete<{ success: boolean; message: string }>('/admin/drives/bulk', { ids: selectedDrives });
+      if (res && res.success) {
+        toastSuccess(`Successfully deleted ${selectedDrives.length} drive(s).`);
+        setDrives((prev) => prev.filter((d) => !selectedDrives.includes(d._id)));
+        setSelectedDrives([]);
+      }
+    } catch (err) {
+      toastError((err as Error).message || 'Failed to bulk delete drives.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-[40px] bg-[#f6f5f0] bg-[radial-gradient(#c2c2c2_1.5px,transparent_1.5px)] [background-size:20px_20px]">
@@ -315,6 +359,18 @@ export default function AdminDrivesPage() {
                 ★ CREATE NEW DRIVE
               </ButtonPrimary>
             </Link>
+            
+            <Link href="/admin/analytics">
+              <ButtonSecondary
+                className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                bgClassName="bg-canvas hover:bg-neutral-50"
+                textClassName="text-ink font-bold uppercase tracking-wider"
+                borderClassName="border-2 border-frame-ink shadow-[3px_3px_0px_#000000]"
+                roundedClassName="rounded-none"
+              >
+                🌍 GLOBAL ANALYTICS
+              </ButtonSecondary>
+            </Link>
             <ButtonSecondary
               onClick={handleLogout}
               className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
@@ -327,6 +383,35 @@ export default function AdminDrivesPage() {
             </ButtonSecondary>
           </div>
         </div>
+
+        {/* Bulk Actions Header */}
+        {drives.length > 0 && (
+          <div className="flex items-center justify-between border-2 border-frame-ink bg-[#ffffff] p-[12px] shadow-[4px_4px_0px_#000000]">
+            <div className="flex items-center gap-[12px]">
+              <input
+                type="checkbox"
+                checked={drives.length > 0 && selectedDrives.length === drives.length}
+                onChange={handleSelectAll}
+                className="w-5 h-5 cursor-pointer accent-ink border-2 border-frame-ink"
+              />
+              <span className="font-helvetica font-bold uppercase text-caption text-ink">
+                Select All ({selectedDrives.length} selected)
+              </span>
+            </div>
+            {selectedDrives.length > 0 && (
+              <ButtonSecondary
+                onClick={handleBulkDelete}
+                className="!text-caption !py-1 transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[3px_3px_0px_#000000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
+                bgClassName="bg-[#e91d2a]"
+                textClassName="text-white font-bold uppercase tracking-wider"
+                borderClassName="border-2 border-frame-ink shadow-[2px_2px_0px_#000000]"
+                roundedClassName="rounded-none"
+              >
+                DELETE SELECTED
+              </ButtonSecondary>
+            )}
+          </div>
+        )}
 
         {/* Drives List */}
         <div className="space-y-[24px]">
@@ -347,12 +432,21 @@ export default function AdminDrivesPage() {
               const cardVariant = getCardVariant(drive.status);
 
               return (
-                <RibbonCard
-                  key={drive._id}
-                  title={`${drive.company_name.toUpperCase()} // ${drive.role.toUpperCase()} -- STATUS: ${drive.status.toUpperCase()}`}
-                  variant={cardVariant}
-                >
-                  <div className="space-y-[16px]">
+                <div key={drive._id} className="relative flex gap-[12px] items-start">
+                  <div className="pt-[16px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedDrives.includes(drive._id)}
+                      onChange={() => handleToggleDriveSelect(drive._id)}
+                      className="w-6 h-6 cursor-pointer accent-ink border-2 border-frame-ink"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <RibbonCard
+                      title={`${drive.company_name.toUpperCase()} // ${drive.role.toUpperCase()} -- STATUS: ${drive.status.toUpperCase()}`}
+                      variant={cardVariant}
+                    >
+                      <div className="space-y-[16px]">
                     {/* Meta Fields Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-[16px] text-body-sm font-times-new-roman border-b border-[#000000] pb-[12px]">
                       <div>
@@ -405,6 +499,23 @@ export default function AdminDrivesPage() {
                               💾 EXPORT APPLICANTS CSV
                             </ButtonSecondary>
                           </a>
+                          
+                          <Link href={`/admin/drives/${drive._id}/analytics`}>
+                            <ButtonSecondary type="button">
+                              📊 VIEW ANALYTICS
+                            </ButtonSecondary>
+                          </Link>
+
+                          <ButtonSecondary
+                            type="button"
+                            onClick={() => handleDeleteDrive(drive._id)}
+                            className="transition-all duration-150 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[3px_3px_0px_#000000]"
+                            bgClassName="bg-[#ffffff]"
+                            textClassName="text-[#e91d2a] font-bold uppercase tracking-wider"
+                            borderClassName="border-2 border-[#e91d2a] shadow-[2px_2px_0px_#000000]"
+                          >
+                            🗑️ DELETE DRIVE
+                          </ButtonSecondary>
                         </div>
 
                         {/* Google Form Mapping Editor */}
@@ -625,8 +736,10 @@ export default function AdminDrivesPage() {
                     )}
                   </div>
                 </RibbonCard>
-              );
-            })
+              </div>
+            </div>
+          );
+        })
           )}
         </div>
       </main>
